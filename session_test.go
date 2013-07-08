@@ -18,7 +18,7 @@ import (
 	"ssh/terminal"
 )
 
-type serverType func(*serverChan, *testing.T)
+type serverType func(*ServerChan, *testing.T)
 
 // dial constructs a new test server and returns a *ClientConn.
 func dial(handler serverType, t *testing.T) *ClientConn {
@@ -59,7 +59,7 @@ func dial(handler serverType, t *testing.T) *ClientConn {
 			ch.Accept()
 			go func() {
 				defer close(done)
-				handler(ch.(*serverChan), t)
+				handler(ch.(*ServerChan), t)
 			}()
 		}
 		<-done
@@ -576,7 +576,7 @@ type exitSignalMsg struct {
 	Lang       string
 }
 
-func newServerShell(ch *serverChan, prompt string) *ServerTerminal {
+func newServerShell(ch *ServerChan, prompt string) *ServerTerminal {
 	term := terminal.NewTerminal(ch, prompt)
 	return &ServerTerminal{
 		Term:    term,
@@ -584,7 +584,7 @@ func newServerShell(ch *serverChan, prompt string) *ServerTerminal {
 	}
 }
 
-func exitStatusZeroHandler(ch *serverChan, t *testing.T) {
+func exitStatusZeroHandler(ch *ServerChan, t *testing.T) {
 	defer ch.Close()
 	// this string is returned to stdout
 	shell := newServerShell(ch, "> ")
@@ -592,14 +592,14 @@ func exitStatusZeroHandler(ch *serverChan, t *testing.T) {
 	sendStatus(0, ch, t)
 }
 
-func exitStatusNonZeroHandler(ch *serverChan, t *testing.T) {
+func exitStatusNonZeroHandler(ch *ServerChan, t *testing.T) {
 	defer ch.Close()
 	shell := newServerShell(ch, "> ")
 	readLine(shell, t)
 	sendStatus(15, ch, t)
 }
 
-func exitSignalAndStatusHandler(ch *serverChan, t *testing.T) {
+func exitSignalAndStatusHandler(ch *ServerChan, t *testing.T) {
 	defer ch.Close()
 	shell := newServerShell(ch, "> ")
 	readLine(shell, t)
@@ -607,27 +607,27 @@ func exitSignalAndStatusHandler(ch *serverChan, t *testing.T) {
 	sendSignal("TERM", ch, t)
 }
 
-func exitSignalHandler(ch *serverChan, t *testing.T) {
+func exitSignalHandler(ch *ServerChan, t *testing.T) {
 	defer ch.Close()
 	shell := newServerShell(ch, "> ")
 	readLine(shell, t)
 	sendSignal("TERM", ch, t)
 }
 
-func exitSignalUnknownHandler(ch *serverChan, t *testing.T) {
+func exitSignalUnknownHandler(ch *ServerChan, t *testing.T) {
 	defer ch.Close()
 	shell := newServerShell(ch, "> ")
 	readLine(shell, t)
 	sendSignal("SYS", ch, t)
 }
 
-func exitWithoutSignalOrStatus(ch *serverChan, t *testing.T) {
+func exitWithoutSignalOrStatus(ch *ServerChan, t *testing.T) {
 	defer ch.Close()
 	shell := newServerShell(ch, "> ")
 	readLine(shell, t)
 }
 
-func shellHandler(ch *serverChan, t *testing.T) {
+func shellHandler(ch *ServerChan, t *testing.T) {
 	defer ch.Close()
 	// this string is returned to stdout
 	shell := newServerShell(ch, "golang")
@@ -637,7 +637,7 @@ func shellHandler(ch *serverChan, t *testing.T) {
 
 // Ignores the command, writes fixed strings to stderr and stdout.
 // Strings are "this-is-stdout." and "this-is-stderr.".
-func fixedOutputHandler(ch *serverChan, t *testing.T) {
+func fixedOutputHandler(ch *ServerChan, t *testing.T) {
 	defer ch.Close()
 
 	_, err := ch.Read(make([]byte, 0))
@@ -665,7 +665,7 @@ func readLine(shell *ServerTerminal, t *testing.T) {
 	}
 }
 
-func sendStatus(status uint32, ch *serverChan, t *testing.T) {
+func sendStatus(status uint32, ch *ServerChan, t *testing.T) {
 	msg := exitStatusMsg{
 		PeersId:   ch.remoteId,
 		Request:   "exit-status",
@@ -677,7 +677,7 @@ func sendStatus(status uint32, ch *serverChan, t *testing.T) {
 	}
 }
 
-func sendSignal(signal string, ch *serverChan, t *testing.T) {
+func sendSignal(signal string, ch *ServerChan, t *testing.T) {
 	sig := exitSignalMsg{
 		PeersId:    ch.remoteId,
 		Request:    "exit-signal",
@@ -692,7 +692,7 @@ func sendSignal(signal string, ch *serverChan, t *testing.T) {
 	}
 }
 
-func sendInvalidRecord(ch *serverChan, t *testing.T) {
+func sendInvalidRecord(ch *ServerChan, t *testing.T) {
 	defer ch.Close()
 	packet := make([]byte, 1+4+4+1)
 	packet[0] = MsgChannelData
@@ -705,7 +705,7 @@ func sendInvalidRecord(ch *serverChan, t *testing.T) {
 	}
 }
 
-func sendZeroWindowAdjust(ch *serverChan, t *testing.T) {
+func sendZeroWindowAdjust(ch *ServerChan, t *testing.T) {
 	defer ch.Close()
 	// send a bogus zero sized window update
 	ch.sendWindowAdj(0)
@@ -714,7 +714,7 @@ func sendZeroWindowAdjust(ch *serverChan, t *testing.T) {
 	sendStatus(0, ch, t)
 }
 
-func discardHandler(ch *serverChan, t *testing.T) {
+func discardHandler(ch *ServerChan, t *testing.T) {
 	defer ch.Close()
 	// grow the window to avoid being fooled by
 	// the initial 1 << 14 window.
@@ -722,7 +722,7 @@ func discardHandler(ch *serverChan, t *testing.T) {
 	io.Copy(ioutil.Discard, ch)
 }
 
-func largeSendHandler(ch *serverChan, t *testing.T) {
+func largeSendHandler(ch *ServerChan, t *testing.T) {
 	defer ch.Close()
 	// grow the window to avoid being fooled by
 	// the initial 1 << 14 window.
@@ -736,7 +736,7 @@ func largeSendHandler(ch *serverChan, t *testing.T) {
 	}
 }
 
-func echoHandler(ch *serverChan, t *testing.T) {
+func echoHandler(ch *ServerChan, t *testing.T) {
 	defer ch.Close()
 	if n, err := copyNRandomly("echohandler", ch, ch, windowTestBytes); err != nil {
 		t.Errorf("short write, wrote %d, expected %d: %v ", n, windowTestBytes, err)
@@ -773,7 +773,7 @@ func copyNRandomly(title string, dst io.Writer, src io.Reader, n int) (int, erro
 	return written, nil
 }
 
-func channelKeepaliveSender(ch *serverChan, t *testing.T) {
+func channelKeepaliveSender(ch *ServerChan, t *testing.T) {
 	defer ch.Close()
 	shell := newServerShell(ch, "> ")
 	readLine(shell, t)

@@ -135,7 +135,7 @@ func (c *GenericChannel) setClosed() bool {
 	return atomic.CompareAndSwapUint32(&c.isClosed, 0, 1)
 }
 
-type serverChan struct {
+type ServerChan struct {
 	GenericChannel
 	// immutable once created
 	chanType  string
@@ -156,7 +156,7 @@ type serverChan struct {
 	cond *sync.Cond
 }
 
-func (c *serverChan) Accept() error {
+func (c *ServerChan) Accept() error {
 	c.serverConn.lock.Lock()
 	defer c.serverConn.lock.Unlock()
 
@@ -173,7 +173,7 @@ func (c *serverChan) Accept() error {
 	return c.WritePacket(MarshalMsg(MsgChannelOpenConfirm, confirm))
 }
 
-func (c *serverChan) Reject(reason RejectionReason, message string) error {
+func (c *ServerChan) Reject(reason RejectionReason, message string) error {
 	c.serverConn.lock.Lock()
 	defer c.serverConn.lock.Unlock()
 
@@ -184,7 +184,7 @@ func (c *serverChan) Reject(reason RejectionReason, message string) error {
 	return c.sendChannelOpenFailure(reason, message)
 }
 
-func (c *serverChan) handlePacket(packet interface{}) {
+func (c *ServerChan) handlePacket(packet interface{}) {
 	c.cond.L.Lock()
 	defer c.cond.L.Unlock()
 
@@ -213,7 +213,7 @@ func (c *serverChan) handlePacket(packet interface{}) {
 	}
 }
 
-func (c *serverChan) handleData(data []byte) {
+func (c *ServerChan) handleData(data []byte) {
 	c.cond.L.Lock()
 	defer c.cond.L.Unlock()
 
@@ -238,7 +238,7 @@ func (c *serverChan) handleData(data []byte) {
 	c.cond.Signal()
 }
 
-func (c *serverChan) Stderr() io.Writer {
+func (c *ServerChan) Stderr() io.Writer {
 	return extendedDataChannel{c: c, t: extendedDataStderr}
 }
 
@@ -246,7 +246,7 @@ func (c *serverChan) Stderr() io.Writer {
 // data of the given type.
 type extendedDataChannel struct {
 	t extendedDataTypeCode
-	c *serverChan
+	c *ServerChan
 }
 
 func (edc extendedDataChannel) Write(data []byte) (n int, err error) {
@@ -280,7 +280,7 @@ func (edc extendedDataChannel) Write(data []byte) (n int, err error) {
 	return
 }
 
-func (c *serverChan) Read(data []byte) (n int, err error) {
+func (c *ServerChan) Read(data []byte) (n int, err error) {
 	n, err, windowAdjustment := c.read(data)
 
 	if windowAdjustment > 0 {
@@ -294,7 +294,7 @@ func (c *serverChan) Read(data []byte) (n int, err error) {
 	return
 }
 
-func (c *serverChan) read(data []byte) (n int, err error, windowAdjustment uint32) {
+func (c *ServerChan) read(data []byte) (n int, err error, windowAdjustment uint32) {
 	c.cond.L.Lock()
 	defer c.cond.L.Unlock()
 
@@ -346,22 +346,22 @@ func (c *serverChan) read(data []byte) (n int, err error, windowAdjustment uint3
 
 // getWindowSpace takes, at most, max bytes of space from the peer's window. It
 // returns the number of bytes actually reserved.
-func (c *serverChan) getWindowSpace(max uint32) (uint32, error) {
+func (c *ServerChan) getWindowSpace(max uint32) (uint32, error) {
 	if c.dead() || c.closed() {
 		return 0, io.EOF
 	}
 	return c.remoteWin.reserve(max), nil
 }
 
-func (c *serverChan) dead() bool {
+func (c *ServerChan) dead() bool {
 	return atomic.LoadUint32(&c.isDead) > 0
 }
 
-func (c *serverChan) setDead() {
+func (c *ServerChan) setDead() {
 	atomic.StoreUint32(&c.isDead, 1)
 }
 
-func (c *serverChan) Write(data []byte) (n int, err error) {
+func (c *ServerChan) Write(data []byte) (n int, err error) {
 	const headerLength = 9 // 1 byte message type, 4 bytes remoteId, 4 bytes data length
 	for len(data) > 0 {
 		space := min(c.maxPacket-headerLength, len(data))
@@ -391,7 +391,7 @@ func (c *serverChan) Write(data []byte) (n int, err error) {
 }
 
 // Close signals the intent to close the channel.
-func (c *serverChan) Close() error {
+func (c *ServerChan) Close() error {
 	c.serverConn.lock.Lock()
 	defer c.serverConn.lock.Unlock()
 
@@ -405,7 +405,7 @@ func (c *serverChan) Close() error {
 	return c.sendClose()
 }
 
-func (c *serverChan) AckRequest(ok bool) error {
+func (c *ServerChan) AckRequest(ok bool) error {
 	c.serverConn.lock.Lock()
 	defer c.serverConn.lock.Unlock()
 
@@ -426,11 +426,11 @@ func (c *serverChan) AckRequest(ok bool) error {
 	return c.WritePacket(MarshalMsg(MsgChannelSuccess, ack))
 }
 
-func (c *serverChan) ChannelType() string {
+func (c *ServerChan) ChannelType() string {
 	return c.chanType
 }
 
-func (c *serverChan) ExtraData() []byte {
+func (c *ServerChan) ExtraData() []byte {
 	return c.extraData
 }
 

@@ -108,7 +108,7 @@ type ServerConn struct {
 	*transport
 	config *ServerConfig
 
-	channels   map[uint32]*serverChan
+	channels   map[uint32]*ServerChan
 	nextChanId uint32
 
 	// lock protects err and channels.
@@ -140,7 +140,7 @@ type ServerConn struct {
 func Server(c net.Conn, config *ServerConfig) *ServerConn {
 	return &ServerConn{
 		transport: newTransport(c, config.rand()),
-		channels:  make(map[uint32]*serverChan),
+		channels:  make(map[uint32]*ServerChan),
 		config:    config,
 	}
 }
@@ -647,7 +647,7 @@ func (s *ServerConn) Accept() (Channel, error) {
 				if msg.MaxPacketSize < minPacketLength || msg.MaxPacketSize > 1<<31 {
 					return nil, errors.New("ssh: invalid MaxPacketSize from peer")
 				}
-				c := &serverChan{
+				c := &ServerChan{
 					GenericChannel: GenericChannel{
 						Conn:      s,
 						remoteId:  msg.PeersId,
