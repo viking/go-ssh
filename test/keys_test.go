@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"code.google.com/p/go.crypto/ssh"
+	"ssh"
 )
 
 var (

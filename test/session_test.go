@@ -10,8 +10,8 @@ package test
 
 import (
 	"bytes"
-	"code.google.com/p/go.crypto/ssh"
 	"io"
+	"ssh"
 	"strings"
 	"testing"
 )
