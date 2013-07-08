@@ -14,15 +14,15 @@ import (
 // authenticate authenticates with the remote server. See RFC 4252.
 func (c *ClientConn) authenticate(session []byte) error {
 	// initiate user auth session
-	if err := c.writePacket(marshal(msgServiceRequest, serviceRequestMsg{serviceUserAuth})); err != nil {
+	if err := c.writePacket(marshal(MsgServiceRequest, ServiceRequestMsg{serviceUserAuth})); err != nil {
 		return err
 	}
 	packet, err := c.readPacket()
 	if err != nil {
 		return err
 	}
-	var serviceAccept serviceAcceptMsg
-	if err := unmarshal(&serviceAccept, packet, msgServiceAccept); err != nil {
+	var serviceAccept ServiceAcceptMsg
+	if err := unmarshal(&serviceAccept, packet, MsgServiceAccept); err != nil {
 		return err
 	}
 	// during the authentication phase the client first attempts the "none" method
@@ -91,7 +91,7 @@ type ClientAuth interface {
 type noneAuth int
 
 func (n *noneAuth) auth(session []byte, user string, t *transport, rand io.Reader) (bool, []string, error) {
-	if err := t.writePacket(marshal(msgUserAuthRequest, userAuthRequestMsg{
+	if err := t.writePacket(marshal(MsgUserAuthRequest, UserAuthRequestMsg{
 		User:    user,
 		Service: serviceSSH,
 		Method:  "none",
@@ -125,7 +125,7 @@ func (p *passwordAuth) auth(session []byte, user string, t *transport, rand io.R
 		return false, nil, err
 	}
 
-	if err := t.writePacket(marshal(msgUserAuthRequest, passwordAuthMsg{
+	if err := t.writePacket(marshal(MsgUserAuthRequest, passwordAuthMsg{
 		User:     user,
 		Service:  serviceSSH,
 		Method:   "password",
@@ -216,7 +216,7 @@ func (p *publickeyAuth) auth(session []byte, user string, t *transport, rand io.
 	for i, key := range validKeys {
 		pubkey := serializePublickey(key)
 		algoname := algoName(key)
-		sign, err := p.Sign(i, rand, buildDataSignedForAuth(session, userAuthRequestMsg{
+		sign, err := p.Sign(i, rand, buildDataSignedForAuth(session, UserAuthRequestMsg{
 			User:    user,
 			Service: serviceSSH,
 			Method:  p.method(),
@@ -237,7 +237,7 @@ func (p *publickeyAuth) auth(session []byte, user string, t *transport, rand io.
 			Pubkey:   string(pubkey),
 			Sig:      sig,
 		}
-		p := marshal(msgUserAuthRequest, msg)
+		p := marshal(MsgUserAuthRequest, msg)
 		if err := t.writePacket(p); err != nil {
 			return false, nil, err
 		}
@@ -264,7 +264,7 @@ func (p *publickeyAuth) validateKey(key interface{}, user string, t *transport) 
 		Algoname: algoname,
 		Pubkey:   string(pubkey),
 	}
-	if err := t.writePacket(marshal(msgUserAuthRequest, msg)); err != nil {
+	if err := t.writePacket(marshal(MsgUserAuthRequest, msg)); err != nil {
 		return false, err
 	}
 
@@ -281,21 +281,21 @@ func (p *publickeyAuth) confirmKeyAck(key interface{}, t *transport) (bool, erro
 			return false, err
 		}
 		switch packet[0] {
-		case msgUserAuthBanner:
+		case MsgUserAuthBanner:
 			// TODO(gpaul): add callback to present the banner to the user
-		case msgUserAuthPubKeyOk:
-			msg := userAuthPubKeyOkMsg{}
-			if err := unmarshal(&msg, packet, msgUserAuthPubKeyOk); err != nil {
+		case MsgUserAuthPubKeyOk:
+			msg := UserAuthPubKeyOkMsg{}
+			if err := unmarshal(&msg, packet, MsgUserAuthPubKeyOk); err != nil {
 				return false, err
 			}
 			if msg.Algo != algoname || msg.PubKey != string(pubkey) {
 				return false, nil
 			}
 			return true, nil
-		case msgUserAuthFailure:
+		case MsgUserAuthFailure:
 			return false, nil
 		default:
-			return false, UnexpectedMessageError{msgUserAuthSuccess, packet[0]}
+			return false, UnexpectedMessageError{MsgUserAuthSuccess, packet[0]}
 		}
 	}
 	panic("unreachable")
@@ -321,20 +321,20 @@ func handleAuthResponse(t *transport) (bool, []string, error) {
 		}
 
 		switch packet[0] {
-		case msgUserAuthBanner:
+		case MsgUserAuthBanner:
 			// TODO: add callback to present the banner to the user
-		case msgUserAuthFailure:
-			msg := userAuthFailureMsg{}
-			if err := unmarshal(&msg, packet, msgUserAuthFailure); err != nil {
+		case MsgUserAuthFailure:
+			msg := UserAuthFailureMsg{}
+			if err := unmarshal(&msg, packet, MsgUserAuthFailure); err != nil {
 				return false, nil, err
 			}
 			return false, msg.Methods, nil
-		case msgUserAuthSuccess:
+		case MsgUserAuthSuccess:
 			return true, nil, nil
-		case msgDisconnect:
+		case MsgDisconnect:
 			return false, nil, io.EOF
 		default:
-			return false, nil, UnexpectedMessageError{msgUserAuthSuccess, packet[0]}
+			return false, nil, UnexpectedMessageError{MsgUserAuthSuccess, packet[0]}
 		}
 	}
 	panic("unreachable")
@@ -425,7 +425,7 @@ func (c *keyboardInteractiveAuth) auth(session []byte, user string, t *transport
 		Submethods string
 	}
 
-	if err := t.writePacket(marshal(msgUserAuthRequest, initiateMsg{
+	if err := t.writePacket(marshal(MsgUserAuthRequest, initiateMsg{
 		User:    user,
 		Service: serviceSSH,
 		Method:  "keyboard-interactive",
@@ -441,21 +441,21 @@ func (c *keyboardInteractiveAuth) auth(session []byte, user string, t *transport
 
 		// like handleAuthResponse, but with less options.
 		switch packet[0] {
-		case msgUserAuthInfoRequest:
+		case MsgUserAuthInfoRequest:
 			// OK
-		case msgUserAuthFailure:
-			var msg userAuthFailureMsg
-			if err := unmarshal(&msg, packet, msgUserAuthFailure); err != nil {
+		case MsgUserAuthFailure:
+			var msg UserAuthFailureMsg
+			if err := unmarshal(&msg, packet, MsgUserAuthFailure); err != nil {
 				return false, nil, err
 			}
 			return false, msg.Methods, nil
-		case msgUserAuthSuccess:
+		case MsgUserAuthSuccess:
 			return true, nil, nil
 		default:
-			return false, nil, UnexpectedMessageError{msgUserAuthInfoRequest, packet[0]}
+			return false, nil, UnexpectedMessageError{MsgUserAuthInfoRequest, packet[0]}
 		}
 
-		var msg userAuthInfoRequestMsg
+		var msg UserAuthInfoRequestMsg
 		if err := unmarshal(&msg, packet, packet[0]); err != nil {
 			return false, nil, err
 		}
@@ -492,7 +492,7 @@ func (c *keyboardInteractiveAuth) auth(session []byte, user string, t *transport
 		}
 		serialized := make([]byte, responseLength)
 		p := serialized
-		p[0] = msgUserAuthInfoResponse
+		p[0] = MsgUserAuthInfoResponse
 		p = p[1:]
 		p = marshalUint32(p, uint32(len(answers)))
 		for _, a := range answers {

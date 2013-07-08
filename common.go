@@ -118,7 +118,7 @@ func findCommonCipher(clientCiphers []string, serverCiphers []string) (commonCip
 	return
 }
 
-func findAgreedAlgorithms(transport *transport, clientKexInit, serverKexInit *kexInitMsg) (kexAlgo, hostKeyAlgo string, ok bool) {
+func findAgreedAlgorithms(transport *transport, clientKexInit, serverKexInit *KexInitMsg) (kexAlgo, hostKeyAlgo string, ok bool) {
 	kexAlgo, ok = findCommonAlgorithm(clientKexInit.KexAlgos, serverKexInit.KexAlgos)
 	if !ok {
 		return
@@ -276,7 +276,7 @@ func algoName(key interface{}) string {
 
 // buildDataSignedForAuth returns the data that is signed in order to prove
 // posession of a private key. See RFC 4252, section 7.
-func buildDataSignedForAuth(sessionId []byte, req userAuthRequestMsg, algo, pubKey []byte) []byte {
+func buildDataSignedForAuth(sessionId []byte, req UserAuthRequestMsg, algo, pubKey []byte) []byte {
 	user := []byte(req.User)
 	service := []byte(req.Service)
 	method := []byte(req.Method)
@@ -292,7 +292,7 @@ func buildDataSignedForAuth(sessionId []byte, req userAuthRequestMsg, algo, pubK
 
 	ret := make([]byte, length)
 	r := marshalString(ret, sessionId)
-	r[0] = msgUserAuthRequest
+	r[0] = MsgUserAuthRequest
 	r = r[1:]
 	r = marshalString(r, user)
 	r = marshalString(r, service)

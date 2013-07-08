@@ -33,16 +33,16 @@ func TestIntLength(t *testing.T) {
 }
 
 var messageTypes = []interface{}{
-	&kexInitMsg{},
-	&kexDHInitMsg{},
-	&serviceRequestMsg{},
-	&serviceAcceptMsg{},
-	&userAuthRequestMsg{},
-	&channelOpenMsg{},
-	&channelOpenConfirmMsg{},
-	&channelOpenFailureMsg{},
-	&channelRequestMsg{},
-	&channelRequestSuccessMsg{},
+	&KexInitMsg{},
+	&KexDHInitMsg{},
+	&ServiceRequestMsg{},
+	&ServiceAcceptMsg{},
+	&UserAuthRequestMsg{},
+	&ChannelOpenMsg{},
+	&ChannelOpenConfirmMsg{},
+	&ChannelOpenFailureMsg{},
+	&ChannelRequestMsg{},
+	&ChannelRequestSuccessMsg{},
 }
 
 func TestMarshalUnmarshal(t *testing.T) {
@@ -64,8 +64,8 @@ func TestMarshalUnmarshal(t *testing.T) {
 			m1 := v.Elem().Interface()
 			m2 := iface
 
-			marshaled := marshal(msgIgnore, m1)
-			if err := unmarshal(m2, marshaled, msgIgnore); err != nil {
+			marshaled := marshal(MsgIgnore, m1)
+			if err := unmarshal(m2, marshaled, MsgIgnore); err != nil {
 				t.Errorf("#%d failed to unmarshal %#v: %s", i, m1, err)
 				break
 			}
@@ -100,8 +100,8 @@ func randomInt(rand *rand.Rand) *big.Int {
 	return new(big.Int).SetInt64(int64(int32(rand.Uint32())))
 }
 
-func (*kexInitMsg) Generate(rand *rand.Rand, size int) reflect.Value {
-	ki := &kexInitMsg{}
+func (*KexInitMsg) Generate(rand *rand.Rand, size int) reflect.Value {
+	ki := &KexInitMsg{}
 	randomBytes(ki.Cookie[:], rand)
 	ki.KexAlgos = randomNameList(rand)
 	ki.ServerHostKeyAlgos = randomNameList(rand)
@@ -119,8 +119,8 @@ func (*kexInitMsg) Generate(rand *rand.Rand, size int) reflect.Value {
 	return reflect.ValueOf(ki)
 }
 
-func (*kexDHInitMsg) Generate(rand *rand.Rand, size int) reflect.Value {
-	dhi := &kexDHInitMsg{}
+func (*KexDHInitMsg) Generate(rand *rand.Rand, size int) reflect.Value {
+	dhi := &KexDHInitMsg{}
 	dhi.X = randomInt(rand)
 	return reflect.ValueOf(dhi)
 }
@@ -133,35 +133,35 @@ func (RejectionReason) Generate(rand *rand.Rand, size int) reflect.Value {
 }
 
 var (
-	_kexInitMsg   = new(kexInitMsg).Generate(rand.New(rand.NewSource(0)), 10).Elem().Interface()
-	_kexDHInitMsg = new(kexDHInitMsg).Generate(rand.New(rand.NewSource(0)), 10).Elem().Interface()
+	_KexInitMsg   = new(KexInitMsg).Generate(rand.New(rand.NewSource(0)), 10).Elem().Interface()
+	_KexDHInitMsg = new(KexDHInitMsg).Generate(rand.New(rand.NewSource(0)), 10).Elem().Interface()
 
-	_kexInit   = marshal(msgKexInit, _kexInitMsg)
-	_kexDHInit = marshal(msgKexDHInit, _kexDHInitMsg)
+	_kexInit   = marshal(MsgKexInit, _KexInitMsg)
+	_kexDHInit = marshal(MsgKexDHInit, _KexDHInitMsg)
 )
 
 func BenchmarkMarshalKexInitMsg(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		marshal(msgKexInit, _kexInitMsg)
+		marshal(MsgKexInit, _KexInitMsg)
 	}
 }
 
 func BenchmarkUnmarshalKexInitMsg(b *testing.B) {
-	m := new(kexInitMsg)
+	m := new(KexInitMsg)
 	for i := 0; i < b.N; i++ {
-		unmarshal(m, _kexInit, msgKexInit)
+		unmarshal(m, _kexInit, MsgKexInit)
 	}
 }
 
 func BenchmarkMarshalKexDHInitMsg(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		marshal(msgKexDHInit, _kexDHInitMsg)
+		marshal(MsgKexDHInit, _KexDHInitMsg)
 	}
 }
 
 func BenchmarkUnmarshalKexDHInitMsg(b *testing.B) {
-	m := new(kexDHInitMsg)
+	m := new(KexDHInitMsg)
 	for i := 0; i < b.N; i++ {
-		unmarshal(m, _kexDHInit, msgKexDHInit)
+		unmarshal(m, _kexDHInit, MsgKexDHInit)
 	}
 }

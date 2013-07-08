@@ -166,7 +166,7 @@ func (s *Session) Setenv(name, value string) error {
 		Name:      name,
 		Value:     value,
 	}
-	if err := s.writePacket(marshal(msgChannelRequest, req)); err != nil {
+	if err := s.writePacket(marshal(MsgChannelRequest, req)); err != nil {
 		return err
 	}
 	return s.waitForResponse()
@@ -204,7 +204,7 @@ func (s *Session) RequestPty(term string, h, w int, termmodes TerminalModes) err
 		Height:    uint32(h * 8),
 		Modelist:  string(tm),
 	}
-	if err := s.writePacket(marshal(msgChannelRequest, req)); err != nil {
+	if err := s.writePacket(marshal(MsgChannelRequest, req)); err != nil {
 		return err
 	}
 	return s.waitForResponse()
@@ -219,7 +219,7 @@ func (s *Session) RequestSubsystem(subsystem string) error {
 		WantReply: true,
 		Subsystem: subsystem,
 	}
-	if err := s.writePacket(marshal(msgChannelRequest, req)); err != nil {
+	if err := s.writePacket(marshal(MsgChannelRequest, req)); err != nil {
 		return err
 	}
 	return s.waitForResponse()
@@ -242,7 +242,7 @@ func (s *Session) Signal(sig Signal) error {
 		WantReply: false,
 		Signal:    string(sig),
 	}
-	return s.writePacket(marshal(msgChannelRequest, req))
+	return s.writePacket(marshal(MsgChannelRequest, req))
 }
 
 // RFC 4254 Section 6.5.
@@ -266,7 +266,7 @@ func (s *Session) Start(cmd string) error {
 		WantReply: true,
 		Command:   cmd,
 	}
-	if err := s.writePacket(marshal(msgChannelRequest, req)); err != nil {
+	if err := s.writePacket(marshal(MsgChannelRequest, req)); err != nil {
 		return err
 	}
 	if err := s.waitForResponse(); err != nil {
@@ -339,12 +339,12 @@ func (s *Session) Shell() error {
 	if s.started {
 		return errors.New("ssh: session already started")
 	}
-	req := channelRequestMsg{
+	req := ChannelRequestMsg{
 		PeersId:   s.remoteId,
 		Request:   "shell",
 		WantReply: true,
 	}
-	if err := s.writePacket(marshal(msgChannelRequest, req)); err != nil {
+	if err := s.writePacket(marshal(MsgChannelRequest, req)); err != nil {
 		return err
 	}
 	if err := s.waitForResponse(); err != nil {
@@ -356,9 +356,9 @@ func (s *Session) Shell() error {
 func (s *Session) waitForResponse() error {
 	msg := <-s.msg
 	switch msg.(type) {
-	case *channelRequestSuccessMsg:
+	case *ChannelRequestSuccessMsg:
 		return nil
-	case *channelRequestFailureMsg:
+	case *ChannelRequestFailureMsg:
 		return errors.New("ssh: request failed")
 	}
 	return fmt.Errorf("ssh: unknown packet %T received: %v", msg, msg)
@@ -414,7 +414,7 @@ func (s *Session) wait() error {
 	// Wait for msg channel to be closed before returning.
 	for msg := range s.msg {
 		switch msg := msg.(type) {
-		case *channelRequestMsg:
+		case *ChannelRequestMsg:
 			switch msg.Request {
 			case "exit-status":
 				d := msg.RequestSpecificData
@@ -447,7 +447,7 @@ func (s *Session) wait() error {
 				// This handles keepalives and matches
 				// OpenSSH's behaviour.
 				if msg.WantReply {
-					s.writePacket(marshal(msgChannelFailure, channelRequestFailureMsg{
+					s.writePacket(marshal(MsgChannelFailure, ChannelRequestFailureMsg{
 						PeersId: s.remoteId,
 					}))
 				}
@@ -564,7 +564,7 @@ func (s *Session) StderrPipe() (io.Reader, error) {
 // NewSession returns a new interactive session on the remote host.
 func (c *ClientConn) NewSession() (*Session, error) {
 	ch := c.newChan(c.transport)
-	if err := c.writePacket(marshal(msgChannelOpen, channelOpenMsg{
+	if err := c.writePacket(marshal(MsgChannelOpen, ChannelOpenMsg{
 		ChanType:      "session",
 		PeersId:       ch.localId,
 		PeersWindow:   1 << 14,

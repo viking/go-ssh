@@ -15,47 +15,47 @@ import (
 // These are SSH message type numbers. They are scattered around several
 // documents but many were taken from [SSH-PARAMETERS].
 const (
-	msgDisconnect     = 1
-	msgIgnore         = 2
-	msgUnimplemented  = 3
-	msgDebug          = 4
-	msgServiceRequest = 5
-	msgServiceAccept  = 6
+	MsgDisconnect     = 1
+	MsgIgnore         = 2
+	MsgUnimplemented  = 3
+	MsgDebug          = 4
+	MsgServiceRequest = 5
+	MsgServiceAccept  = 6
 
-	msgKexInit = 20
-	msgNewKeys = 21
+	MsgKexInit = 20
+	MsgNewKeys = 21
 
 	// Diffie-Helman
-	msgKexDHInit  = 30
-	msgKexDHReply = 31
+	MsgKexDHInit  = 30
+	MsgKexDHReply = 31
 
 	// Standard authentication messages
-	msgUserAuthRequest  = 50
-	msgUserAuthFailure  = 51
-	msgUserAuthSuccess  = 52
-	msgUserAuthBanner   = 53
-	msgUserAuthPubKeyOk = 60
+	MsgUserAuthRequest  = 50
+	MsgUserAuthFailure  = 51
+	MsgUserAuthSuccess  = 52
+	MsgUserAuthBanner   = 53
+	MsgUserAuthPubKeyOk = 60
 
 	// Method specific messages
-	msgUserAuthInfoRequest  = 60
-	msgUserAuthInfoResponse = 61
+	MsgUserAuthInfoRequest  = 60
+	MsgUserAuthInfoResponse = 61
 
-	msgGlobalRequest  = 80
-	msgRequestSuccess = 81
-	msgRequestFailure = 82
+	MsgGlobalRequest  = 80
+	MsgRequestSuccess = 81
+	MsgRequestFailure = 82
 
 	// Channel manipulation
-	msgChannelOpen         = 90
-	msgChannelOpenConfirm  = 91
-	msgChannelOpenFailure  = 92
-	msgChannelWindowAdjust = 93
-	msgChannelData         = 94
-	msgChannelExtendedData = 95
-	msgChannelEOF          = 96
-	msgChannelClose        = 97
-	msgChannelRequest      = 98
-	msgChannelSuccess      = 99
-	msgChannelFailure      = 100
+	MsgChannelOpen         = 90
+	MsgChannelOpenConfirm  = 91
+	MsgChannelOpenFailure  = 92
+	MsgChannelWindowAdjust = 93
+	MsgChannelData         = 94
+	MsgChannelExtendedData = 95
+	MsgChannelEOF          = 96
+	MsgChannelClose        = 97
+	MsgChannelRequest      = 98
+	MsgChannelSuccess      = 99
+	MsgChannelFailure      = 100
 )
 
 // SSH messages:
@@ -66,14 +66,14 @@ const (
 // ssh tag of "rest" receives the remainder of a packet when unmarshaling.
 
 // See RFC 4253, section 11.1.
-type disconnectMsg struct {
+type DisconnectMsg struct {
 	Reason   uint32
 	Message  string
 	Language string
 }
 
 // See RFC 4253, section 7.1.
-type kexInitMsg struct {
+type KexInitMsg struct {
 	Cookie                  [16]byte
 	KexAlgos                []string
 	ServerHostKeyAlgos      []string
@@ -90,28 +90,28 @@ type kexInitMsg struct {
 }
 
 // See RFC 4253, section 8.
-type kexDHInitMsg struct {
+type KexDHInitMsg struct {
 	X *big.Int
 }
 
-type kexDHReplyMsg struct {
+type KexDHReplyMsg struct {
 	HostKey   []byte
 	Y         *big.Int
 	Signature []byte
 }
 
 // See RFC 4253, section 10.
-type serviceRequestMsg struct {
+type ServiceRequestMsg struct {
 	Service string
 }
 
 // See RFC 4253, section 10.
-type serviceAcceptMsg struct {
+type ServiceAcceptMsg struct {
 	Service string
 }
 
 // See RFC 4252, section 5.
-type userAuthRequestMsg struct {
+type UserAuthRequestMsg struct {
 	User    string
 	Service string
 	Method  string
@@ -119,13 +119,13 @@ type userAuthRequestMsg struct {
 }
 
 // See RFC 4252, section 5.1
-type userAuthFailureMsg struct {
+type UserAuthFailureMsg struct {
 	Methods        []string
 	PartialSuccess bool
 }
 
 // See RFC 4256, section 3.2
-type userAuthInfoRequestMsg struct {
+type UserAuthInfoRequestMsg struct {
 	User               string
 	Instruction        string
 	DeprecatedLanguage string
@@ -134,7 +134,7 @@ type userAuthInfoRequestMsg struct {
 }
 
 // See RFC 4254, section 5.1.
-type channelOpenMsg struct {
+type ChannelOpenMsg struct {
 	ChanType         string
 	PeersId          uint32
 	PeersWindow      uint32
@@ -143,7 +143,7 @@ type channelOpenMsg struct {
 }
 
 // See RFC 4254, section 5.1.
-type channelOpenConfirmMsg struct {
+type ChannelOpenConfirmMsg struct {
 	PeersId          uint32
 	MyId             uint32
 	MyWindow         uint32
@@ -152,14 +152,14 @@ type channelOpenConfirmMsg struct {
 }
 
 // See RFC 4254, section 5.1.
-type channelOpenFailureMsg struct {
+type ChannelOpenFailureMsg struct {
 	PeersId  uint32
 	Reason   RejectionReason
 	Message  string
 	Language string
 }
 
-type channelRequestMsg struct {
+type ChannelRequestMsg struct {
 	PeersId             uint32
 	Request             string
 	WantReply           bool
@@ -167,49 +167,49 @@ type channelRequestMsg struct {
 }
 
 // See RFC 4254, section 5.4.
-type channelRequestSuccessMsg struct {
+type ChannelRequestSuccessMsg struct {
 	PeersId uint32
 }
 
 // See RFC 4254, section 5.4.
-type channelRequestFailureMsg struct {
+type ChannelRequestFailureMsg struct {
 	PeersId uint32
 }
 
 // See RFC 4254, section 5.3
-type channelCloseMsg struct {
+type ChannelCloseMsg struct {
 	PeersId uint32
 }
 
 // See RFC 4254, section 5.3
-type channelEOFMsg struct {
+type ChannelEOFMsg struct {
 	PeersId uint32
 }
 
 // See RFC 4254, section 4
-type globalRequestMsg struct {
+type GlobalRequestMsg struct {
 	Type      string
 	WantReply bool
 }
 
 // See RFC 4254, section 4
-type globalRequestSuccessMsg struct {
+type GlobalRequestSuccessMsg struct {
 	Data []byte `ssh:"rest"`
 }
 
 // See RFC 4254, section 4
-type globalRequestFailureMsg struct {
+type GlobalRequestFailureMsg struct {
 	Data []byte `ssh:"rest"`
 }
 
 // See RFC 4254, section 5.2
-type windowAdjustMsg struct {
+type WindowAdjustMsg struct {
 	PeersId         uint32
 	AdditionalBytes uint32
 }
 
 // See RFC 4252, section 7
-type userAuthPubKeyOkMsg struct {
+type UserAuthPubKeyOkMsg struct {
 	Algo   string
 	PubKey string
 }
@@ -588,48 +588,48 @@ var bigIntType = reflect.TypeOf((*big.Int)(nil))
 func decode(packet []byte) (interface{}, error) {
 	var msg interface{}
 	switch packet[0] {
-	case msgDisconnect:
-		msg = new(disconnectMsg)
-	case msgServiceRequest:
-		msg = new(serviceRequestMsg)
-	case msgServiceAccept:
-		msg = new(serviceAcceptMsg)
-	case msgKexInit:
-		msg = new(kexInitMsg)
-	case msgKexDHInit:
-		msg = new(kexDHInitMsg)
-	case msgKexDHReply:
-		msg = new(kexDHReplyMsg)
-	case msgUserAuthRequest:
-		msg = new(userAuthRequestMsg)
-	case msgUserAuthFailure:
-		msg = new(userAuthFailureMsg)
-	case msgUserAuthPubKeyOk:
-		msg = new(userAuthPubKeyOkMsg)
-	case msgGlobalRequest:
-		msg = new(globalRequestMsg)
-	case msgRequestSuccess:
-		msg = new(globalRequestSuccessMsg)
-	case msgRequestFailure:
-		msg = new(globalRequestFailureMsg)
-	case msgChannelOpen:
-		msg = new(channelOpenMsg)
-	case msgChannelOpenConfirm:
-		msg = new(channelOpenConfirmMsg)
-	case msgChannelOpenFailure:
-		msg = new(channelOpenFailureMsg)
-	case msgChannelWindowAdjust:
-		msg = new(windowAdjustMsg)
-	case msgChannelEOF:
-		msg = new(channelEOFMsg)
-	case msgChannelClose:
-		msg = new(channelCloseMsg)
-	case msgChannelRequest:
-		msg = new(channelRequestMsg)
-	case msgChannelSuccess:
-		msg = new(channelRequestSuccessMsg)
-	case msgChannelFailure:
-		msg = new(channelRequestFailureMsg)
+	case MsgDisconnect:
+		msg = new(DisconnectMsg)
+	case MsgServiceRequest:
+		msg = new(ServiceRequestMsg)
+	case MsgServiceAccept:
+		msg = new(ServiceAcceptMsg)
+	case MsgKexInit:
+		msg = new(KexInitMsg)
+	case MsgKexDHInit:
+		msg = new(KexDHInitMsg)
+	case MsgKexDHReply:
+		msg = new(KexDHReplyMsg)
+	case MsgUserAuthRequest:
+		msg = new(UserAuthRequestMsg)
+	case MsgUserAuthFailure:
+		msg = new(UserAuthFailureMsg)
+	case MsgUserAuthPubKeyOk:
+		msg = new(UserAuthPubKeyOkMsg)
+	case MsgGlobalRequest:
+		msg = new(GlobalRequestMsg)
+	case MsgRequestSuccess:
+		msg = new(GlobalRequestSuccessMsg)
+	case MsgRequestFailure:
+		msg = new(GlobalRequestFailureMsg)
+	case MsgChannelOpen:
+		msg = new(ChannelOpenMsg)
+	case MsgChannelOpenConfirm:
+		msg = new(ChannelOpenConfirmMsg)
+	case MsgChannelOpenFailure:
+		msg = new(ChannelOpenFailureMsg)
+	case MsgChannelWindowAdjust:
+		msg = new(WindowAdjustMsg)
+	case MsgChannelEOF:
+		msg = new(ChannelEOFMsg)
+	case MsgChannelClose:
+		msg = new(ChannelCloseMsg)
+	case MsgChannelRequest:
+		msg = new(ChannelRequestMsg)
+	case MsgChannelSuccess:
+		msg = new(ChannelRequestSuccessMsg)
+	case MsgChannelFailure:
+		msg = new(ChannelRequestFailureMsg)
 	default:
 		return nil, UnexpectedMessageError{0, packet[0]}
 	}

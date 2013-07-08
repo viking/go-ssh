@@ -152,8 +152,8 @@ func (s *ServerConn) kexDH(group *dhGroup, hashFunc crypto.Hash, magics *handsha
 	if err != nil {
 		return
 	}
-	var kexDHInit kexDHInitMsg
-	if err = unmarshal(&kexDHInit, packet, msgKexDHInit); err != nil {
+	var kexDHInit KexDHInitMsg
+	if err = unmarshal(&kexDHInit, packet, MsgKexDHInit); err != nil {
 		return
 	}
 
@@ -207,12 +207,12 @@ func (s *ServerConn) kexDH(group *dhGroup, hashFunc crypto.Hash, magics *handsha
 
 	serializedSig := serializeSignature(hostKeyAlgo, sig)
 
-	kexDHReply := kexDHReplyMsg{
+	kexDHReply := KexDHReplyMsg{
 		HostKey:   serializedHostKey,
 		Y:         Y,
 		Signature: serializedSig,
 	}
-	packet = marshal(msgKexDHReply, kexDHReply)
+	packet = marshal(MsgKexDHReply, kexDHReply)
 
 	err = s.writePacket(packet)
 	return
@@ -242,17 +242,17 @@ func (s *ServerConn) Handshake() (err error) {
 	if packet, err = s.readPacket(); err != nil {
 		return
 	}
-	var serviceRequest serviceRequestMsg
-	if err = unmarshal(&serviceRequest, packet, msgServiceRequest); err != nil {
+	var serviceRequest ServiceRequestMsg
+	if err = unmarshal(&serviceRequest, packet, MsgServiceRequest); err != nil {
 		return
 	}
 	if serviceRequest.Service != serviceUserAuth {
 		return errors.New("ssh: requested service '" + serviceRequest.Service + "' before authenticating")
 	}
-	serviceAccept := serviceAcceptMsg{
+	serviceAccept := ServiceAcceptMsg{
 		Service: serviceUserAuth,
 	}
-	if err = s.writePacket(marshal(msgServiceAccept, serviceAccept)); err != nil {
+	if err = s.writePacket(marshal(MsgServiceAccept, serviceAccept)); err != nil {
 		return
 	}
 
@@ -262,8 +262,8 @@ func (s *ServerConn) Handshake() (err error) {
 	return
 }
 
-func (s *ServerConn) clientInitHandshake(clientKexInit *kexInitMsg, clientKexInitPacket []byte) (err error) {
-	serverKexInit := kexInitMsg{
+func (s *ServerConn) clientInitHandshake(clientKexInit *KexInitMsg, clientKexInitPacket []byte) (err error) {
+	serverKexInit := KexInitMsg{
 		KexAlgos:                supportedKexAlgos,
 		ServerHostKeyAlgos:      supportedHostKeyAlgos,
 		CiphersClientServer:     s.config.Crypto.ciphers(),
@@ -273,18 +273,18 @@ func (s *ServerConn) clientInitHandshake(clientKexInit *kexInitMsg, clientKexIni
 		CompressionClientServer: supportedCompressions,
 		CompressionServerClient: supportedCompressions,
 	}
-	serverKexInitPacket := marshal(msgKexInit, serverKexInit)
+	serverKexInitPacket := marshal(MsgKexInit, serverKexInit)
 
 	if err = s.writePacket(serverKexInitPacket); err != nil {
 		return
 	}
 
 	if clientKexInitPacket == nil {
-		clientKexInit = new(kexInitMsg)
+		clientKexInit = new(KexInitMsg)
 		if clientKexInitPacket, err = s.readPacket(); err != nil {
 			return
 		}
-		if err = unmarshal(clientKexInit, clientKexInitPacket, msgKexInit); err != nil {
+		if err = unmarshal(clientKexInit, clientKexInitPacket, MsgKexInit); err != nil {
 			return
 		}
 	}
@@ -305,7 +305,7 @@ func (s *ServerConn) clientInitHandshake(clientKexInit *kexInitMsg, clientKexIni
 	var magics handshakeMagics
 	magics.serverVersion = serverVersion[:len(serverVersion)-2]
 	magics.clientVersion = s.ClientVersion
-	magics.serverKexInit = marshal(msgKexInit, serverKexInit)
+	magics.serverKexInit = marshal(MsgKexInit, serverKexInit)
 	magics.clientKexInit = clientKexInitPacket
 
 	var H, K []byte
@@ -332,7 +332,7 @@ func (s *ServerConn) clientInitHandshake(clientKexInit *kexInitMsg, clientKexIni
 
 	var packet []byte
 
-	if err = s.writePacket([]byte{msgNewKeys}); err != nil {
+	if err = s.writePacket([]byte{MsgNewKeys}); err != nil {
 		return
 	}
 	if err = s.transport.writer.setupKeys(serverKeys, K, H, s.sessionId, hashFunc); err != nil {
@@ -342,8 +342,8 @@ func (s *ServerConn) clientInitHandshake(clientKexInit *kexInitMsg, clientKexIni
 	if packet, err = s.readPacket(); err != nil {
 		return
 	}
-	if packet[0] != msgNewKeys {
-		return UnexpectedMessageError{msgNewKeys, packet[0]}
+	if packet[0] != MsgNewKeys {
+		return UnexpectedMessageError{MsgNewKeys, packet[0]}
 	}
 	if err = s.transport.reader.setupKeys(clientKeys, K, H, s.sessionId, hashFunc); err != nil {
 		return
@@ -384,7 +384,7 @@ func (s *ServerConn) testPubKey(user, algo string, pubKey []byte) bool {
 }
 
 func (s *ServerConn) authenticate(H []byte) error {
-	var userAuthReq userAuthRequestMsg
+	var userAuthReq UserAuthRequestMsg
 	var err error
 	var packet []byte
 
@@ -393,7 +393,7 @@ userAuthLoop:
 		if packet, err = s.readPacket(); err != nil {
 			return err
 		}
-		if err = unmarshal(&userAuthReq, packet, msgUserAuthRequest); err != nil {
+		if err = unmarshal(&userAuthReq, packet, MsgUserAuthRequest); err != nil {
 			return err
 		}
 
@@ -412,12 +412,12 @@ userAuthLoop:
 			}
 			payload := userAuthReq.Payload
 			if len(payload) < 1 || payload[0] != 0 {
-				return ParseError{msgUserAuthRequest}
+				return ParseError{MsgUserAuthRequest}
 			}
 			payload = payload[1:]
 			password, payload, ok := parseString(payload)
 			if !ok || len(payload) > 0 {
-				return ParseError{msgUserAuthRequest}
+				return ParseError{MsgUserAuthRequest}
 			}
 
 			s.User = userAuthReq.User
@@ -439,32 +439,32 @@ userAuthLoop:
 			}
 			payload := userAuthReq.Payload
 			if len(payload) < 1 {
-				return ParseError{msgUserAuthRequest}
+				return ParseError{MsgUserAuthRequest}
 			}
 			isQuery := payload[0] == 0
 			payload = payload[1:]
 			algoBytes, payload, ok := parseString(payload)
 			if !ok {
-				return ParseError{msgUserAuthRequest}
+				return ParseError{MsgUserAuthRequest}
 			}
 			algo := string(algoBytes)
 
 			pubKey, payload, ok := parseString(payload)
 			if !ok {
-				return ParseError{msgUserAuthRequest}
+				return ParseError{MsgUserAuthRequest}
 			}
 			if isQuery {
 				// The client can query if the given public key
 				// would be ok.
 				if len(payload) > 0 {
-					return ParseError{msgUserAuthRequest}
+					return ParseError{MsgUserAuthRequest}
 				}
 				if s.testPubKey(userAuthReq.User, algo, pubKey) {
-					okMsg := userAuthPubKeyOkMsg{
+					okMsg := UserAuthPubKeyOkMsg{
 						Algo:   algo,
 						PubKey: string(pubKey),
 					}
-					if err = s.writePacket(marshal(msgUserAuthPubKeyOk, okMsg)); err != nil {
+					if err = s.writePacket(marshal(MsgUserAuthPubKeyOk, okMsg)); err != nil {
 						return err
 					}
 					continue userAuthLoop
@@ -472,14 +472,14 @@ userAuthLoop:
 			} else {
 				sig, payload, ok := parseString(payload)
 				if !ok || len(payload) > 0 {
-					return ParseError{msgUserAuthRequest}
+					return ParseError{MsgUserAuthRequest}
 				}
 				if !isAcceptableAlgo(algo) {
 					break
 				}
 				rsaSig, ok := parseRSASig(sig)
 				if !ok {
-					return ParseError{msgUserAuthRequest}
+					return ParseError{MsgUserAuthRequest}
 				}
 				signedData := buildDataSignedForAuth(H, userAuthReq, algoBytes, pubKey)
 				switch algo {
@@ -490,14 +490,14 @@ userAuthLoop:
 					digest := h.Sum(nil)
 					key, _, ok := parsePubKey(pubKey)
 					if !ok {
-						return ParseError{msgUserAuthRequest}
+						return ParseError{MsgUserAuthRequest}
 					}
 					rsaKey, ok := key.(*rsa.PublicKey)
 					if !ok {
-						return ParseError{msgUserAuthRequest}
+						return ParseError{MsgUserAuthRequest}
 					}
 					if rsa.VerifyPKCS1v15(rsaKey, hashFunc, digest, rsaSig) != nil {
-						return ParseError{msgUserAuthRequest}
+						return ParseError{MsgUserAuthRequest}
 					}
 				default:
 					return errors.New("ssh: isAcceptableAlgo incorrect")
@@ -509,7 +509,7 @@ userAuthLoop:
 			}
 		}
 
-		var failureMsg userAuthFailureMsg
+		var failureMsg UserAuthFailureMsg
 		if s.config.PasswordCallback != nil {
 			failureMsg.Methods = append(failureMsg.Methods, "password")
 		}
@@ -524,12 +524,12 @@ userAuthLoop:
 			return errors.New("ssh: no authentication methods configured but NoClientAuth is also false")
 		}
 
-		if err = s.writePacket(marshal(msgUserAuthFailure, failureMsg)); err != nil {
+		if err = s.writePacket(marshal(MsgUserAuthFailure, failureMsg)); err != nil {
 			return err
 		}
 	}
 
-	packet = []byte{msgUserAuthSuccess}
+	packet = []byte{MsgUserAuthSuccess}
 	if err = s.writePacket(packet); err != nil {
 		return err
 	}
@@ -554,7 +554,7 @@ func (c *sshClientKeyboardInteractive) Challenge(user, instruction string, quest
 		prompts = appendBool(prompts, echos[i])
 	}
 
-	if err := c.writePacket(marshal(msgUserAuthInfoRequest, userAuthInfoRequestMsg{
+	if err := c.writePacket(marshal(MsgUserAuthInfoRequest, UserAuthInfoRequestMsg{
 		Instruction: instruction,
 		NumPrompts:  uint32(len(questions)),
 		Prompts:     prompts,
@@ -566,20 +566,20 @@ func (c *sshClientKeyboardInteractive) Challenge(user, instruction string, quest
 	if err != nil {
 		return nil, err
 	}
-	if packet[0] != msgUserAuthInfoResponse {
-		return nil, UnexpectedMessageError{msgUserAuthInfoResponse, packet[0]}
+	if packet[0] != MsgUserAuthInfoResponse {
+		return nil, UnexpectedMessageError{MsgUserAuthInfoResponse, packet[0]}
 	}
 	packet = packet[1:]
 
 	n, packet, ok := parseUint32(packet)
 	if !ok || int(n) != len(questions) {
-		return nil, &ParseError{msgUserAuthInfoResponse}
+		return nil, &ParseError{MsgUserAuthInfoResponse}
 	}
 
 	for i := uint32(0); i < n; i++ {
 		ans, rest, ok := parseString(packet)
 		if !ok {
-			return nil, &ParseError{msgUserAuthInfoResponse}
+			return nil, &ParseError{MsgUserAuthInfoResponse}
 		}
 
 		answers = append(answers, string(ans))
@@ -620,10 +620,10 @@ func (s *ServerConn) Accept() (Channel, error) {
 		}
 
 		switch packet[0] {
-		case msgChannelData:
+		case MsgChannelData:
 			if len(packet) < 9 {
 				// malformed data packet
-				return nil, ParseError{msgChannelData}
+				return nil, ParseError{MsgChannelData}
 			}
 			remoteId := binary.BigEndian.Uint32(packet[1:5])
 			s.lock.Lock()
@@ -643,7 +643,7 @@ func (s *ServerConn) Accept() (Channel, error) {
 				return nil, err
 			}
 			switch msg := decoded.(type) {
-			case *channelOpenMsg:
+			case *ChannelOpenMsg:
 				if msg.MaxPacketSize < minPacketLength || msg.MaxPacketSize > 1<<31 {
 					return nil, errors.New("ssh: invalid MaxPacketSize from peer")
 				}
@@ -669,7 +669,7 @@ func (s *ServerConn) Accept() (Channel, error) {
 				s.lock.Unlock()
 				return c, nil
 
-			case *channelRequestMsg:
+			case *ChannelRequestMsg:
 				s.lock.Lock()
 				c, ok := s.channels[msg.PeersId]
 				if !ok {
@@ -679,7 +679,7 @@ func (s *ServerConn) Accept() (Channel, error) {
 				c.handlePacket(msg)
 				s.lock.Unlock()
 
-			case *windowAdjustMsg:
+			case *WindowAdjustMsg:
 				s.lock.Lock()
 				c, ok := s.channels[msg.PeersId]
 				if !ok {
@@ -689,7 +689,7 @@ func (s *ServerConn) Accept() (Channel, error) {
 				c.handlePacket(msg)
 				s.lock.Unlock()
 
-			case *channelEOFMsg:
+			case *ChannelEOFMsg:
 				s.lock.Lock()
 				c, ok := s.channels[msg.PeersId]
 				if !ok {
@@ -699,7 +699,7 @@ func (s *ServerConn) Accept() (Channel, error) {
 				c.handlePacket(msg)
 				s.lock.Unlock()
 
-			case *channelCloseMsg:
+			case *ChannelCloseMsg:
 				s.lock.Lock()
 				c, ok := s.channels[msg.PeersId]
 				if !ok {
@@ -709,21 +709,21 @@ func (s *ServerConn) Accept() (Channel, error) {
 				c.handlePacket(msg)
 				s.lock.Unlock()
 
-			case *globalRequestMsg:
+			case *GlobalRequestMsg:
 				if msg.WantReply {
-					if err := s.writePacket([]byte{msgRequestFailure}); err != nil {
+					if err := s.writePacket([]byte{MsgRequestFailure}); err != nil {
 						return nil, err
 					}
 				}
 
-			case *kexInitMsg:
+			case *KexInitMsg:
 				s.lock.Lock()
 				if err := s.clientInitHandshake(msg, packet); err != nil {
 					s.lock.Unlock()
 					return nil, err
 				}
 				s.lock.Unlock()
-			case *disconnectMsg:
+			case *DisconnectMsg:
 				return nil, io.EOF
 			default:
 				// Unknown message. Ignore.

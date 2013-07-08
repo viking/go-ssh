@@ -135,7 +135,7 @@ func (t *transport) readPacket() ([]byte, error) {
 		if len(packet) == 0 {
 			return nil, errors.New("ssh: zero length packet")
 		}
-		if packet[0] != msgIgnore && packet[0] != msgDebug {
+		if packet[0] != MsgIgnore && packet[0] != MsgDebug {
 			return packet, nil
 		}
 	}

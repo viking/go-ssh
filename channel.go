@@ -86,35 +86,35 @@ type channel struct {
 }
 
 func (c *channel) sendWindowAdj(n int) error {
-	msg := windowAdjustMsg{
+	msg := WindowAdjustMsg{
 		PeersId:         c.remoteId,
 		AdditionalBytes: uint32(n),
 	}
-	return c.writePacket(marshal(msgChannelWindowAdjust, msg))
+	return c.writePacket(marshal(MsgChannelWindowAdjust, msg))
 }
 
 // sendEOF sends EOF to the remote side. RFC 4254 Section 5.3
 func (c *channel) sendEOF() error {
-	return c.writePacket(marshal(msgChannelEOF, channelEOFMsg{
+	return c.writePacket(marshal(MsgChannelEOF, ChannelEOFMsg{
 		PeersId: c.remoteId,
 	}))
 }
 
 // sendClose informs the remote side of our intent to close the channel.
 func (c *channel) sendClose() error {
-	return c.conn.writePacket(marshal(msgChannelClose, channelCloseMsg{
+	return c.conn.writePacket(marshal(MsgChannelClose, ChannelCloseMsg{
 		PeersId: c.remoteId,
 	}))
 }
 
 func (c *channel) sendChannelOpenFailure(reason RejectionReason, message string) error {
-	reject := channelOpenFailureMsg{
+	reject := ChannelOpenFailureMsg{
 		PeersId:  c.remoteId,
 		Reason:   reason,
 		Message:  message,
 		Language: "en",
 	}
-	return c.writePacket(marshal(msgChannelOpenFailure, reject))
+	return c.writePacket(marshal(MsgChannelOpenFailure, reject))
 }
 
 func (c *channel) writePacket(b []byte) error {
@@ -164,13 +164,13 @@ func (c *serverChan) Accept() error {
 		return c.serverConn.err
 	}
 
-	confirm := channelOpenConfirmMsg{
+	confirm := ChannelOpenConfirmMsg{
 		PeersId:       c.remoteId,
 		MyId:          c.localId,
 		MyWindow:      c.myWindow,
 		MaxPacketSize: c.maxPacket,
 	}
-	return c.writePacket(marshal(msgChannelOpenConfirm, confirm))
+	return c.writePacket(marshal(MsgChannelOpenConfirm, confirm))
 }
 
 func (c *serverChan) Reject(reason RejectionReason, message string) error {
@@ -189,7 +189,7 @@ func (c *serverChan) handlePacket(packet interface{}) {
 	defer c.cond.L.Unlock()
 
 	switch packet := packet.(type) {
-	case *channelRequestMsg:
+	case *ChannelRequestMsg:
 		req := ChannelRequest{
 			Request:   packet.Request,
 			WantReply: packet.WantReply,
@@ -198,13 +198,13 @@ func (c *serverChan) handlePacket(packet interface{}) {
 
 		c.pendingRequests = append(c.pendingRequests, req)
 		c.cond.Signal()
-	case *channelCloseMsg:
+	case *ChannelCloseMsg:
 		c.theyClosed = true
 		c.cond.Signal()
-	case *channelEOFMsg:
+	case *ChannelEOFMsg:
 		c.theySentEOF = true
 		c.cond.Signal()
-	case *windowAdjustMsg:
+	case *WindowAdjustMsg:
 		if !c.remoteWin.add(packet.AdditionalBytes) {
 			panic("illegal window update")
 		}
@@ -263,7 +263,7 @@ func (edc extendedDataChannel) Write(data []byte) (n int, err error) {
 		}
 
 		packet := make([]byte, headerLength+len(todo))
-		packet[0] = msgChannelExtendedData
+		packet[0] = MsgChannelExtendedData
 		marshalUint32(packet[1:], c.remoteId)
 		marshalUint32(packet[5:], uint32(edc.t))
 		marshalUint32(packet[9:], uint32(len(todo)))
@@ -284,7 +284,7 @@ func (c *serverChan) Read(data []byte) (n int, err error) {
 	n, err, windowAdjustment := c.read(data)
 
 	if windowAdjustment > 0 {
-		packet := marshal(msgChannelWindowAdjust, windowAdjustMsg{
+		packet := marshal(MsgChannelWindowAdjust, WindowAdjustMsg{
 			PeersId:         c.remoteId,
 			AdditionalBytes: windowAdjustment,
 		})
@@ -374,7 +374,7 @@ func (c *serverChan) Write(data []byte) (n int, err error) {
 		}
 
 		packet := make([]byte, headerLength+len(todo))
-		packet[0] = msgChannelData
+		packet[0] = MsgChannelData
 		marshalUint32(packet[1:], c.remoteId)
 		marshalUint32(packet[5:], uint32(len(todo)))
 		copy(packet[9:], todo)
@@ -414,16 +414,16 @@ func (c *serverChan) AckRequest(ok bool) error {
 	}
 
 	if !ok {
-		ack := channelRequestFailureMsg{
+		ack := ChannelRequestFailureMsg{
 			PeersId: c.remoteId,
 		}
-		return c.writePacket(marshal(msgChannelFailure, ack))
+		return c.writePacket(marshal(MsgChannelFailure, ack))
 	}
 
-	ack := channelRequestSuccessMsg{
+	ack := ChannelRequestSuccessMsg{
 		PeersId: c.remoteId,
 	}
-	return c.writePacket(marshal(msgChannelSuccess, ack))
+	return c.writePacket(marshal(MsgChannelSuccess, ack))
 }
 
 func (c *serverChan) ChannelType() string {
@@ -474,7 +474,7 @@ func newClientChan(cc conn, id uint32) *clientChan {
 // the remoteId and records any initial window advertisement.
 func (c *clientChan) waitForChannelOpenResponse() error {
 	switch msg := (<-c.msg).(type) {
-	case *channelOpenConfirmMsg:
+	case *ChannelOpenConfirmMsg:
 		if msg.MaxPacketSize < minPacketLength || msg.MaxPacketSize > 1<<31 {
 			return errors.New("ssh: invalid MaxPacketSize from peer")
 		}
@@ -483,7 +483,7 @@ func (c *clientChan) waitForChannelOpenResponse() error {
 		c.maxPacket = msg.MaxPacketSize
 		c.remoteWin.add(msg.MyWindow)
 		return nil
-	case *channelOpenFailureMsg:
+	case *ChannelOpenFailureMsg:
 		return errors.New(safeString(msg.Message))
 	}
 	return errors.New("ssh: unexpected packet")
@@ -522,7 +522,7 @@ func (w *chanWriter) Write(data []byte) (written int, err error) {
 		n = r
 		remoteId := w.remoteId
 		packet := []byte{
-			msgChannelData,
+			MsgChannelData,
 			byte(remoteId >> 24), byte(remoteId >> 16), byte(remoteId >> 8), byte(remoteId),
 			byte(n >> 24), byte(n >> 16), byte(n >> 8), byte(n),
 		}

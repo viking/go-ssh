@@ -61,7 +61,7 @@ func (c *ClientConn) ListenTCP(laddr *net.TCPAddr) (net.Listener, error) {
 	// Register this forward, using the port number we obtained.
 	//
 	// This does not work on OpenSSH < 6.0, which will send a
-	// channelOpenMsg with port number 0, rather than the actual
+	// ChannelOpenMsg with port number 0, rather than the actual
 	// port number.
 	ch := c.forwardList.add(*laddr)
 
@@ -216,7 +216,7 @@ type channelOpenDirectMsg struct {
 // strings and are expected to be resolveable at the remote end.
 func (c *ClientConn) dial(laddr string, lport int, raddr string, rport int) (*tcpChan, error) {
 	ch := c.newChan(c.transport)
-	if err := c.writePacket(marshal(msgChannelOpen, channelOpenDirectMsg{
+	if err := c.writePacket(marshal(MsgChannelOpen, channelOpenDirectMsg{
 		ChanType:      "direct-tcpip",
 		PeersId:       ch.localId,
 		PeersWindow:   1 << 14,

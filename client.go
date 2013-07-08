@@ -75,7 +75,7 @@ func (c *ClientConn) handshake() error {
 		return err
 	}
 	magics.serverVersion = version
-	clientKexInit := kexInitMsg{
+	clientKexInit := KexInitMsg{
 		KexAlgos:                supportedKexAlgos,
 		ServerHostKeyAlgos:      supportedHostKeyAlgos,
 		CiphersClientServer:     c.config.Crypto.ciphers(),
@@ -85,7 +85,7 @@ func (c *ClientConn) handshake() error {
 		CompressionClientServer: supportedCompressions,
 		CompressionServerClient: supportedCompressions,
 	}
-	kexInitPacket := marshal(msgKexInit, clientKexInit)
+	kexInitPacket := marshal(MsgKexInit, clientKexInit)
 	magics.clientKexInit = kexInitPacket
 
 	if err := c.writePacket(kexInitPacket); err != nil {
@@ -98,8 +98,8 @@ func (c *ClientConn) handshake() error {
 
 	magics.serverKexInit = packet
 
-	var serverKexInit kexInitMsg
-	if err = unmarshal(&serverKexInit, packet, msgKexInit); err != nil {
+	var serverKexInit KexInitMsg
+	if err = unmarshal(&serverKexInit, packet, MsgKexInit); err != nil {
 		return err
 	}
 
@@ -134,7 +134,7 @@ func (c *ClientConn) handshake() error {
 		return err
 	}
 
-	if err = c.writePacket([]byte{msgNewKeys}); err != nil {
+	if err = c.writePacket([]byte{MsgNewKeys}); err != nil {
 		return err
 	}
 	if err = c.transport.writer.setupKeys(clientKeys, K, H, H, hashFunc); err != nil {
@@ -143,8 +143,8 @@ func (c *ClientConn) handshake() error {
 	if packet, err = c.readPacket(); err != nil {
 		return err
 	}
-	if packet[0] != msgNewKeys {
-		return UnexpectedMessageError{msgNewKeys, packet[0]}
+	if packet[0] != MsgNewKeys {
+		return UnexpectedMessageError{MsgNewKeys, packet[0]}
 	}
 	if err := c.transport.reader.setupKeys(serverKeys, K, H, H, hashFunc); err != nil {
 		return err
@@ -160,10 +160,10 @@ func (c *ClientConn) kexDH(group *dhGroup, hashFunc crypto.Hash, magics *handsha
 		return nil, nil, err
 	}
 	X := new(big.Int).Exp(group.g, x, group.p)
-	kexDHInit := kexDHInitMsg{
+	kexDHInit := KexDHInitMsg{
 		X: X,
 	}
-	if err := c.writePacket(marshal(msgKexDHInit, kexDHInit)); err != nil {
+	if err := c.writePacket(marshal(MsgKexDHInit, kexDHInit)); err != nil {
 		return nil, nil, err
 	}
 
@@ -172,8 +172,8 @@ func (c *ClientConn) kexDH(group *dhGroup, hashFunc crypto.Hash, magics *handsha
 		return nil, nil, err
 	}
 
-	var kexDHReply kexDHReplyMsg
-	if err = unmarshal(&kexDHReply, packet, msgKexDHReply); err != nil {
+	var kexDHReply KexDHReplyMsg
+	if err = unmarshal(&kexDHReply, packet, MsgKexDHReply); err != nil {
 		return nil, nil, err
 	}
 
@@ -223,7 +223,7 @@ func (c *ClientConn) mainLoop() {
 		// cause this loop to block indefinately if the consumer does
 		// not service them.
 		switch packet[0] {
-		case msgChannelData:
+		case MsgChannelData:
 			if len(packet) < 9 {
 				// malformed data packet
 				return
@@ -240,7 +240,7 @@ func (c *ClientConn) mainLoop() {
 				return
 			}
 			ch.stdout.write(packet)
-		case msgChannelExtendedData:
+		case MsgChannelExtendedData:
 			if len(packet) < 13 {
 				// malformed data packet
 				return
@@ -273,21 +273,21 @@ func (c *ClientConn) mainLoop() {
 				return
 			}
 			switch msg := decoded.(type) {
-			case *channelOpenMsg:
+			case *ChannelOpenMsg:
 				c.handleChanOpen(msg)
-			case *channelOpenConfirmMsg:
+			case *ChannelOpenConfirmMsg:
 				ch, ok := c.getChan(msg.PeersId)
 				if !ok {
 					return
 				}
 				ch.msg <- msg
-			case *channelOpenFailureMsg:
+			case *ChannelOpenFailureMsg:
 				ch, ok := c.getChan(msg.PeersId)
 				if !ok {
 					return
 				}
 				ch.msg <- msg
-			case *channelCloseMsg:
+			case *ChannelCloseMsg:
 				ch, ok := c.getChan(msg.PeersId)
 				if !ok {
 					return
@@ -295,7 +295,7 @@ func (c *ClientConn) mainLoop() {
 				ch.Close()
 				close(ch.msg)
 				c.chanList.remove(msg.PeersId)
-			case *channelEOFMsg:
+			case *ChannelEOFMsg:
 				ch, ok := c.getChan(msg.PeersId)
 				if !ok {
 					return
@@ -304,25 +304,25 @@ func (c *ClientConn) mainLoop() {
 				// RFC 4254 is mute on how EOF affects dataExt messages but
 				// it is logical to signal EOF at the same time.
 				ch.stderr.eof()
-			case *channelRequestSuccessMsg:
+			case *ChannelRequestSuccessMsg:
 				ch, ok := c.getChan(msg.PeersId)
 				if !ok {
 					return
 				}
 				ch.msg <- msg
-			case *channelRequestFailureMsg:
+			case *ChannelRequestFailureMsg:
 				ch, ok := c.getChan(msg.PeersId)
 				if !ok {
 					return
 				}
 				ch.msg <- msg
-			case *channelRequestMsg:
+			case *ChannelRequestMsg:
 				ch, ok := c.getChan(msg.PeersId)
 				if !ok {
 					return
 				}
 				ch.msg <- msg
-			case *windowAdjustMsg:
+			case *WindowAdjustMsg:
 				ch, ok := c.getChan(msg.PeersId)
 				if !ok {
 					return
@@ -331,15 +331,15 @@ func (c *ClientConn) mainLoop() {
 					// invalid window update
 					return
 				}
-			case *globalRequestMsg:
+			case *GlobalRequestMsg:
 				// This handles keepalive messages and matches
 				// the behaviour of OpenSSH.
 				if msg.WantReply {
-					c.writePacket(marshal(msgRequestFailure, globalRequestFailureMsg{}))
+					c.writePacket(marshal(MsgRequestFailure, GlobalRequestFailureMsg{}))
 				}
-			case *globalRequestSuccessMsg, *globalRequestFailureMsg:
+			case *GlobalRequestSuccessMsg, *GlobalRequestFailureMsg:
 				c.globalRequest.response <- msg
-			case *disconnectMsg:
+			case *DisconnectMsg:
 				return
 			default:
 				fmt.Printf("mainLoop: unhandled message %T: %v\n", msg, msg)
@@ -349,7 +349,7 @@ func (c *ClientConn) mainLoop() {
 }
 
 // Handle channel open messages from the remote side.
-func (c *ClientConn) handleChanOpen(msg *channelOpenMsg) {
+func (c *ClientConn) handleChanOpen(msg *ChannelOpenMsg) {
 	if msg.MaxPacketSize < minPacketLength || msg.MaxPacketSize > 1<<31 {
 		c.sendConnectionFailed(msg.PeersId)
 	}
@@ -383,7 +383,7 @@ func (c *ClientConn) handleChanOpen(msg *channelOpenMsg) {
 		ch.remoteWin.add(msg.PeersWindow)
 		ch.maxPacket = msg.MaxPacketSize
 
-		m := channelOpenConfirmMsg{
+		m := ChannelOpenConfirmMsg{
 			PeersId:  ch.remoteId,
 			MyId:     ch.localId,
 			MyWindow: 1 << 14,
@@ -392,31 +392,31 @@ func (c *ClientConn) handleChanOpen(msg *channelOpenMsg) {
 			MaxPacketSize: 1 << 15,
 		}
 
-		c.writePacket(marshal(msgChannelOpenConfirm, m))
+		c.writePacket(marshal(MsgChannelOpenConfirm, m))
 		l <- forward{ch, raddr}
 	default:
 		// unknown channel type
-		m := channelOpenFailureMsg{
+		m := ChannelOpenFailureMsg{
 			PeersId:  msg.PeersId,
 			Reason:   UnknownChannelType,
 			Message:  fmt.Sprintf("unknown channel type: %v", msg.ChanType),
 			Language: "en_US.UTF-8",
 		}
-		c.writePacket(marshal(msgChannelOpenFailure, m))
+		c.writePacket(marshal(MsgChannelOpenFailure, m))
 	}
 }
 
 // sendGlobalRequest sends a global request message as specified
 // in RFC4254 section 4. To correctly synchronise messages, a lock
 // is held internally until a response is returned.
-func (c *ClientConn) sendGlobalRequest(m interface{}) (*globalRequestSuccessMsg, error) {
+func (c *ClientConn) sendGlobalRequest(m interface{}) (*GlobalRequestSuccessMsg, error) {
 	c.globalRequest.Lock()
 	defer c.globalRequest.Unlock()
-	if err := c.writePacket(marshal(msgGlobalRequest, m)); err != nil {
+	if err := c.writePacket(marshal(MsgGlobalRequest, m)); err != nil {
 		return nil, err
 	}
 	r := <-c.globalRequest.response
-	if r, ok := r.(*globalRequestSuccessMsg); ok {
+	if r, ok := r.(*GlobalRequestSuccessMsg); ok {
 		return r, nil
 	}
 	return nil, errors.New("request failed")
@@ -425,13 +425,13 @@ func (c *ClientConn) sendGlobalRequest(m interface{}) (*globalRequestSuccessMsg,
 // sendConnectionFailed rejects an incoming channel identified
 // by remoteId.
 func (c *ClientConn) sendConnectionFailed(remoteId uint32) error {
-	m := channelOpenFailureMsg{
+	m := ChannelOpenFailureMsg{
 		PeersId:  remoteId,
 		Reason:   ConnectionFailed,
 		Message:  "invalid request",
 		Language: "en_US.UTF-8",
 	}
-	return c.writePacket(marshal(msgChannelOpenFailure, m))
+	return c.writePacket(marshal(MsgChannelOpenFailure, m))
 }
 
 // parseTCPAddr parses the originating address from the remote into a *net.TCPAddr.
