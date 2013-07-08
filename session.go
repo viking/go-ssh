@@ -129,7 +129,7 @@ type Session struct {
 	Stdout io.Writer
 	Stderr io.Writer
 
-	*clientChan // the channel backing this session
+	*ClientChan // the channel backing this session
 
 	started   bool // true once Start, Run or Shell is invoked.
 	copyFuncs []func() error
@@ -480,8 +480,8 @@ func (s *Session) stdin() {
 		s.Stdin = new(bytes.Buffer)
 	}
 	s.copyFuncs = append(s.copyFuncs, func() error {
-		_, err := io.Copy(s.clientChan.stdin, s.Stdin)
-		if err1 := s.clientChan.stdin.Close(); err == nil && err1 != io.EOF {
+		_, err := io.Copy(s.ClientChan.stdin, s.Stdin)
+		if err1 := s.ClientChan.stdin.Close(); err == nil && err1 != io.EOF {
 			err = err1
 		}
 		return err
@@ -496,7 +496,7 @@ func (s *Session) stdout() {
 		s.Stdout = ioutil.Discard
 	}
 	s.copyFuncs = append(s.copyFuncs, func() error {
-		_, err := io.Copy(s.Stdout, s.clientChan.stdout)
+		_, err := io.Copy(s.Stdout, s.ClientChan.stdout)
 		return err
 	})
 }
@@ -509,7 +509,7 @@ func (s *Session) stderr() {
 		s.Stderr = ioutil.Discard
 	}
 	s.copyFuncs = append(s.copyFuncs, func() error {
-		_, err := io.Copy(s.Stderr, s.clientChan.stderr)
+		_, err := io.Copy(s.Stderr, s.ClientChan.stderr)
 		return err
 	})
 }
@@ -524,7 +524,7 @@ func (s *Session) StdinPipe() (io.WriteCloser, error) {
 		return nil, errors.New("ssh: StdinPipe after process started")
 	}
 	s.stdinpipe = true
-	return s.clientChan.stdin, nil
+	return s.ClientChan.stdin, nil
 }
 
 // StdoutPipe returns a pipe that will be connected to the
@@ -541,7 +541,7 @@ func (s *Session) StdoutPipe() (io.Reader, error) {
 		return nil, errors.New("ssh: StdoutPipe after process started")
 	}
 	s.stdoutpipe = true
-	return s.clientChan.stdout, nil
+	return s.ClientChan.stdout, nil
 }
 
 // StderrPipe returns a pipe that will be connected to the
@@ -558,7 +558,7 @@ func (s *Session) StderrPipe() (io.Reader, error) {
 		return nil, errors.New("ssh: StderrPipe after process started")
 	}
 	s.stderrpipe = true
-	return s.clientChan.stderr, nil
+	return s.ClientChan.stderr, nil
 }
 
 // NewSession returns a new interactive session on the remote host.
@@ -573,12 +573,12 @@ func (c *ClientConn) NewSession() (*Session, error) {
 		c.chanList.remove(ch.localId)
 		return nil, err
 	}
-	if err := ch.waitForChannelOpenResponse(); err != nil {
+	if err := ch.WaitForChannelOpenResponse(); err != nil {
 		c.chanList.remove(ch.localId)
 		return nil, fmt.Errorf("ssh: unable to open session: %v", err)
 	}
 	return &Session{
-		clientChan: ch,
+		ClientChan: ch,
 	}, nil
 }
 

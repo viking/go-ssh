@@ -86,7 +86,7 @@ type forwardEntry struct {
 // arguments to add/remove/lookup should be address as specified in
 // the original forward-request.
 type forward struct {
-	c     *clientChan  // the ssh client channel underlying this forward
+	c     *ClientChan  // the ssh client channel underlying this forward
 	raddr *net.TCPAddr // the raddr of the incoming connection
 }
 
@@ -138,7 +138,7 @@ func (l *tcpListener) Accept() (net.Conn, error) {
 	}
 	return &tcpChanConn{
 		tcpChan: &tcpChan{
-			clientChan: s.c,
+			ClientChan: s.c,
 			Reader:     s.c.stdout,
 			Writer:     s.c.stdin,
 		},
@@ -229,19 +229,19 @@ func (c *ClientConn) dial(laddr string, lport int, raddr string, rport int) (*tc
 		c.chanList.remove(ch.localId)
 		return nil, err
 	}
-	if err := ch.waitForChannelOpenResponse(); err != nil {
+	if err := ch.WaitForChannelOpenResponse(); err != nil {
 		c.chanList.remove(ch.localId)
 		return nil, fmt.Errorf("ssh: unable to open direct tcpip connection: %v", err)
 	}
 	return &tcpChan{
-		clientChan: ch,
+		ClientChan: ch,
 		Reader:     ch.stdout,
 		Writer:     ch.stdin,
 	}, nil
 }
 
 type tcpChan struct {
-	*clientChan // the backing channel
+	*ClientChan // the backing channel
 	io.Reader
 	io.Writer
 }

@@ -380,7 +380,7 @@ func TestServerZeroWindowAdjust(t *testing.T) {
 	}
 
 	// send a bogus zero sized window update
-	session.clientChan.sendWindowAdj(0)
+	session.ClientChan.sendWindowAdj(0)
 
 	err = session.Wait()
 	if err != nil {

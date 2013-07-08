@@ -219,7 +219,7 @@ func (c *ClientConn) mainLoop() {
 			break
 		}
 		// TODO(dfc) A note on blocking channel use.
-		// The msg, data and dataExt channels of a clientChan can
+		// The msg, data and dataExt channels of a ClientChan can
 		// cause this loop to block indefinately if the consumer does
 		// not service them.
 		switch packet[0] {
@@ -498,30 +498,30 @@ func (c *ClientConfig) rand() io.Reader {
 type chanList struct {
 	// protects concurrent access to chans
 	sync.Mutex
-	// chans are indexed by the local id of the channel, clientChan.localId.
+	// chans are indexed by the local id of the channel, ClientChan.localId.
 	// The PeersId value of messages received by ClientConn.mainLoop is
-	// used to locate the right local clientChan in this slice.
-	chans []*clientChan
+	// used to locate the right local ClientChan in this slice.
+	chans []*ClientChan
 }
 
 // Allocate a new ClientChan with the next avail local id.
-func (c *chanList) newChan(t *transport) *clientChan {
+func (c *chanList) newChan(t *transport) *ClientChan {
 	c.Lock()
 	defer c.Unlock()
 	for i := range c.chans {
 		if c.chans[i] == nil {
-			ch := newClientChan(t, uint32(i))
+			ch := NewClientChan(t, uint32(i))
 			c.chans[i] = ch
 			return ch
 		}
 	}
 	i := len(c.chans)
-	ch := newClientChan(t, uint32(i))
+	ch := NewClientChan(t, uint32(i))
 	c.chans = append(c.chans, ch)
 	return ch
 }
 
-func (c *chanList) getChan(id uint32) (*clientChan, bool) {
+func (c *chanList) getChan(id uint32) (*ClientChan, bool) {
 	c.Lock()
 	defer c.Unlock()
 	if id >= uint32(len(c.chans)) {

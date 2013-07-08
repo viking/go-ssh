@@ -434,9 +434,9 @@ func (c *serverChan) ExtraData() []byte {
 	return c.extraData
 }
 
-// A clientChan represents a single RFC 4254 channel multiplexed
+// A ClientChan represents a single RFC 4254 channel multiplexed
 // over a SSH connection.
-type clientChan struct {
+type ClientChan struct {
 	channel
 	stdin  *chanWriter
 	stdout *chanReader
@@ -444,11 +444,11 @@ type clientChan struct {
 	msg    chan interface{}
 }
 
-// newClientChan returns a partially constructed *clientChan
-// using the local id provided. To be usable clientChan.remoteId
+// NewClientChan returns a partially constructed *ClientChan
+// using the local id provided. To be usable ClientChan.remoteId
 // needs to be assigned once known.
-func newClientChan(cc conn, id uint32) *clientChan {
-	c := &clientChan{
+func NewClientChan(cc conn, id uint32) *ClientChan {
+	c := &ClientChan{
 		channel: channel{
 			conn:      cc,
 			localId:   id,
@@ -470,9 +470,9 @@ func newClientChan(cc conn, id uint32) *clientChan {
 	return c
 }
 
-// waitForChannelOpenResponse, if successful, fills out
+// WaitForChannelOpenResponse, if successful, fills out
 // the remoteId and records any initial window advertisement.
-func (c *clientChan) waitForChannelOpenResponse() error {
+func (c *ClientChan) WaitForChannelOpenResponse() error {
 	switch msg := (<-c.msg).(type) {
 	case *ChannelOpenConfirmMsg:
 		if msg.MaxPacketSize < minPacketLength || msg.MaxPacketSize > 1<<31 {
@@ -490,7 +490,7 @@ func (c *clientChan) waitForChannelOpenResponse() error {
 }
 
 // Close signals the intent to close the channel.
-func (c *clientChan) Close() error {
+func (c *ClientChan) Close() error {
 	if !c.setClosed() {
 		return errors.New("ssh: channel already closed")
 	}
