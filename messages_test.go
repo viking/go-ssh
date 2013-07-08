@@ -64,7 +64,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 			m1 := v.Elem().Interface()
 			m2 := iface
 
-			marshaled := marshal(MsgIgnore, m1)
+			marshaled := MarshalMsg(MsgIgnore, m1)
 			if err := unmarshal(m2, marshaled, MsgIgnore); err != nil {
 				t.Errorf("#%d failed to unmarshal %#v: %s", i, m1, err)
 				break
@@ -136,13 +136,13 @@ var (
 	_KexInitMsg   = new(KexInitMsg).Generate(rand.New(rand.NewSource(0)), 10).Elem().Interface()
 	_KexDHInitMsg = new(KexDHInitMsg).Generate(rand.New(rand.NewSource(0)), 10).Elem().Interface()
 
-	_kexInit   = marshal(MsgKexInit, _KexInitMsg)
-	_kexDHInit = marshal(MsgKexDHInit, _KexDHInitMsg)
+	_kexInit   = MarshalMsg(MsgKexInit, _KexInitMsg)
+	_kexDHInit = MarshalMsg(MsgKexDHInit, _KexDHInitMsg)
 )
 
 func BenchmarkMarshalKexInitMsg(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		marshal(MsgKexInit, _KexInitMsg)
+		MarshalMsg(MsgKexInit, _KexInitMsg)
 	}
 }
 
@@ -155,7 +155,7 @@ func BenchmarkUnmarshalKexInitMsg(b *testing.B) {
 
 func BenchmarkMarshalKexDHInitMsg(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		marshal(MsgKexDHInit, _KexDHInitMsg)
+		MarshalMsg(MsgKexDHInit, _KexDHInitMsg)
 	}
 }
 

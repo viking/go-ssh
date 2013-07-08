@@ -672,7 +672,7 @@ func sendStatus(status uint32, ch *serverChan, t *testing.T) {
 		WantReply: false,
 		Status:    status,
 	}
-	if err := ch.writePacket(marshal(MsgChannelRequest, msg)); err != nil {
+	if err := ch.writePacket(MarshalMsg(MsgChannelRequest, msg)); err != nil {
 		t.Errorf("unable to send status: %v", err)
 	}
 }
@@ -687,7 +687,7 @@ func sendSignal(signal string, ch *serverChan, t *testing.T) {
 		Errmsg:     "Process terminated",
 		Lang:       "en-GB-oed",
 	}
-	if err := ch.writePacket(marshal(MsgChannelRequest, sig)); err != nil {
+	if err := ch.writePacket(MarshalMsg(MsgChannelRequest, sig)); err != nil {
 		t.Errorf("unable to send signal: %v", err)
 	}
 }
@@ -696,8 +696,8 @@ func sendInvalidRecord(ch *serverChan, t *testing.T) {
 	defer ch.Close()
 	packet := make([]byte, 1+4+4+1)
 	packet[0] = MsgChannelData
-	marshalUint32(packet[1:], 29348723 /* invalid channel id */)
-	marshalUint32(packet[5:], 1)
+	MarshalUint32(packet[1:], 29348723 /* invalid channel id */)
+	MarshalUint32(packet[5:], 1)
 	packet[9] = 42
 
 	if err := ch.writePacket(packet); err != nil {
@@ -782,7 +782,7 @@ func channelKeepaliveSender(ch *serverChan, t *testing.T) {
 		Request:   "keepalive@openssh.com",
 		WantReply: true,
 	}
-	if err := ch.writePacket(marshal(MsgChannelRequest, msg)); err != nil {
+	if err := ch.writePacket(MarshalMsg(MsgChannelRequest, msg)); err != nil {
 		t.Errorf("unable to send channel keepalive request: %v", err)
 	}
 	sendStatus(0, ch, t)

@@ -147,7 +147,7 @@ func (ac *AgentClient) sendAndReceive(req []byte) (reply interface{}, replyType 
 	defer ac.mu.Unlock()
 
 	msg := make([]byte, stringLength(len(req)))
-	marshalString(msg, req)
+	MarshalString(msg, req)
 	if _, err = ac.conn.Write(msg); err != nil {
 		return
 	}
@@ -173,7 +173,7 @@ func (ac *AgentClient) sendAndReceive(req []byte) (reply interface{}, replyType 
 // RequestIdentities queries the agent for protocol 2 keys as defined in
 // [PROTOCOL.agent] section 2.5.2.
 func (ac *AgentClient) RequestIdentities() ([]*AgentKey, error) {
-	req := marshal(agentRequestIdentities, requestIdentitiesAgentMsg{})
+	req := MarshalMsg(agentRequestIdentities, requestIdentitiesAgentMsg{})
 
 	msg, msgType, err := ac.sendAndReceive(req)
 	if err != nil {
@@ -205,7 +205,7 @@ func (ac *AgentClient) RequestIdentities() ([]*AgentKey, error) {
 // SignRequest requests the signing of data by the agent using a protocol 2 key
 // as defined in [PROTOCOL.agent] section 2.6.2.
 func (ac *AgentClient) SignRequest(key interface{}, data []byte) ([]byte, error) {
-	req := marshal(agentSignRequest, signRequestAgentMsg{
+	req := MarshalMsg(agentSignRequest, signRequestAgentMsg{
 		KeyBlob: serializePublickey(key),
 		Data:    data,
 	})

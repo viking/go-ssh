@@ -208,8 +208,8 @@ func serializeSignature(algoname string, sig []byte) []byte {
 	length += stringLength(len(sig))
 
 	ret := make([]byte, length)
-	r := marshalString(ret, []byte(algoname))
-	r = marshalString(r, sig)
+	r := MarshalString(ret, []byte(algoname))
+	r = MarshalString(r, sig)
 
 	return ret
 }
@@ -234,7 +234,7 @@ func serializePublickey(key interface{}) []byte {
 	length := stringLength(len(algoname))
 	length += len(pubKeyBytes)
 	ret := make([]byte, length)
-	r := marshalString(ret, []byte(algoname))
+	r := MarshalString(ret, []byte(algoname))
 	copy(r, pubKeyBytes)
 	return ret
 }
@@ -291,16 +291,16 @@ func buildDataSignedForAuth(sessionId []byte, req UserAuthRequestMsg, algo, pubK
 	length += stringLength(len(pubKey))
 
 	ret := make([]byte, length)
-	r := marshalString(ret, sessionId)
+	r := MarshalString(ret, sessionId)
 	r[0] = MsgUserAuthRequest
 	r = r[1:]
-	r = marshalString(r, user)
-	r = marshalString(r, service)
-	r = marshalString(r, method)
+	r = MarshalString(r, user)
+	r = MarshalString(r, service)
+	r = MarshalString(r, method)
 	r[0] = 1
 	r = r[1:]
-	r = marshalString(r, algo)
-	r = marshalString(r, pubKey)
+	r = MarshalString(r, algo)
+	r = MarshalString(r, pubKey)
 	return ret
 }
 

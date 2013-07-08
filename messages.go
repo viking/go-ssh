@@ -61,7 +61,7 @@ const (
 // SSH messages:
 //
 // These structures mirror the wire format of the corresponding SSH messages.
-// They are marshaled using reflection with the marshal and unmarshal functions
+// They are marshaled using reflection with the MarshalMsg and unmarshal functions
 // in this file. The only wrinkle is that a final member of type []byte with a
 // ssh tag of "rest" receives the remainder of a packet when unmarshaling.
 
@@ -306,8 +306,8 @@ func unmarshal(out interface{}, packet []byte, expectedType uint8) error {
 	return nil
 }
 
-// marshal serializes the message in msg, using the given message type.
-func marshal(msgType uint8, msg interface{}) []byte {
+// MarshalMsg serializes the message in msg, using the given message type.
+func MarshalMsg(msgType uint8, msg interface{}) []byte {
 	out := make([]byte, 1, 64)
 	out[0] = msgType
 
@@ -372,7 +372,7 @@ func marshal(msgType uint8, msg interface{}) []byte {
 					out = newOut
 				}
 				out = out[:oldLength+needed]
-				marshalInt(out[oldLength:], n)
+				MarshalInt(out[oldLength:], n)
 			} else {
 				panic("pointer to unknown type")
 			}
@@ -494,17 +494,17 @@ func intLength(n *big.Int) int {
 	return length
 }
 
-func marshalUint32(to []byte, n uint32) []byte {
+func MarshalUint32(to []byte, n uint32) []byte {
 	binary.BigEndian.PutUint32(to, n)
 	return to[4:]
 }
 
-func marshalUint64(to []byte, n uint64) []byte {
+func MarshalUint64(to []byte, n uint64) []byte {
 	binary.BigEndian.PutUint64(to, n)
 	return to[8:]
 }
 
-func marshalInt(to []byte, n *big.Int) []byte {
+func MarshalInt(to []byte, n *big.Int) []byte {
 	lengthBytes := to
 	to = to[4:]
 	length := 0
@@ -554,7 +554,7 @@ func marshalInt(to []byte, n *big.Int) []byte {
 func writeInt(w io.Writer, n *big.Int) {
 	length := intLength(n)
 	buf := make([]byte, length)
-	marshalInt(buf, n)
+	MarshalInt(buf, n)
 	w.Write(buf)
 }
 
@@ -572,7 +572,7 @@ func stringLength(n int) int {
 	return 4 + n
 }
 
-func marshalString(to []byte, s []byte) []byte {
+func MarshalString(to []byte, s []byte) []byte {
 	to[0] = byte(len(s) >> 24)
 	to[1] = byte(len(s) >> 16)
 	to[2] = byte(len(s) >> 8)

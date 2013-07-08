@@ -185,7 +185,7 @@ func (s *ServerConn) kexDH(group *dhGroup, hashFunc crypto.Hash, magics *handsha
 	writeInt(h, kexDHInit.X)
 	writeInt(h, Y)
 	K = make([]byte, intLength(kInt))
-	marshalInt(K, kInt)
+	MarshalInt(K, kInt)
 	h.Write(K)
 
 	H = h.Sum(nil)
@@ -212,7 +212,7 @@ func (s *ServerConn) kexDH(group *dhGroup, hashFunc crypto.Hash, magics *handsha
 		Y:         Y,
 		Signature: serializedSig,
 	}
-	packet = marshal(MsgKexDHReply, kexDHReply)
+	packet = MarshalMsg(MsgKexDHReply, kexDHReply)
 
 	err = s.writePacket(packet)
 	return
@@ -252,7 +252,7 @@ func (s *ServerConn) Handshake() (err error) {
 	serviceAccept := ServiceAcceptMsg{
 		Service: serviceUserAuth,
 	}
-	if err = s.writePacket(marshal(MsgServiceAccept, serviceAccept)); err != nil {
+	if err = s.writePacket(MarshalMsg(MsgServiceAccept, serviceAccept)); err != nil {
 		return
 	}
 
@@ -273,7 +273,7 @@ func (s *ServerConn) clientInitHandshake(clientKexInit *KexInitMsg, clientKexIni
 		CompressionClientServer: supportedCompressions,
 		CompressionServerClient: supportedCompressions,
 	}
-	serverKexInitPacket := marshal(MsgKexInit, serverKexInit)
+	serverKexInitPacket := MarshalMsg(MsgKexInit, serverKexInit)
 
 	if err = s.writePacket(serverKexInitPacket); err != nil {
 		return
@@ -305,7 +305,7 @@ func (s *ServerConn) clientInitHandshake(clientKexInit *KexInitMsg, clientKexIni
 	var magics handshakeMagics
 	magics.serverVersion = serverVersion[:len(serverVersion)-2]
 	magics.clientVersion = s.ClientVersion
-	magics.serverKexInit = marshal(MsgKexInit, serverKexInit)
+	magics.serverKexInit = MarshalMsg(MsgKexInit, serverKexInit)
 	magics.clientKexInit = clientKexInitPacket
 
 	var H, K []byte
@@ -464,7 +464,7 @@ userAuthLoop:
 						Algo:   algo,
 						PubKey: string(pubKey),
 					}
-					if err = s.writePacket(marshal(MsgUserAuthPubKeyOk, okMsg)); err != nil {
+					if err = s.writePacket(MarshalMsg(MsgUserAuthPubKeyOk, okMsg)); err != nil {
 						return err
 					}
 					continue userAuthLoop
@@ -524,7 +524,7 @@ userAuthLoop:
 			return errors.New("ssh: no authentication methods configured but NoClientAuth is also false")
 		}
 
-		if err = s.writePacket(marshal(MsgUserAuthFailure, failureMsg)); err != nil {
+		if err = s.writePacket(MarshalMsg(MsgUserAuthFailure, failureMsg)); err != nil {
 			return err
 		}
 	}
@@ -554,7 +554,7 @@ func (c *sshClientKeyboardInteractive) Challenge(user, instruction string, quest
 		prompts = appendBool(prompts, echos[i])
 	}
 
-	if err := c.writePacket(marshal(MsgUserAuthInfoRequest, UserAuthInfoRequestMsg{
+	if err := c.writePacket(MarshalMsg(MsgUserAuthInfoRequest, UserAuthInfoRequestMsg{
 		Instruction: instruction,
 		NumPrompts:  uint32(len(questions)),
 		Prompts:     prompts,

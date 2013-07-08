@@ -133,9 +133,9 @@ func marshalPrivRSA(priv *rsa.PrivateKey) []byte {
 	length += intLength(priv.N)
 
 	ret := make([]byte, length)
-	r := marshalString(ret, []byte(KeyAlgoRSA))
-	r = marshalInt(r, e)
-	r = marshalInt(r, priv.N)
+	r := MarshalString(ret, []byte(KeyAlgoRSA))
+	r = MarshalInt(r, e)
+	r = MarshalInt(r, priv.N)
 
 	return ret
 }
@@ -147,8 +147,8 @@ func marshalPubRSA(key *rsa.PublicKey) []byte {
 	length += intLength(key.N)
 
 	ret := make([]byte, length)
-	r := marshalInt(ret, e)
-	r = marshalInt(r, key.N)
+	r := MarshalInt(ret, e)
+	r = MarshalInt(r, key.N)
 
 	return ret
 }
@@ -161,10 +161,10 @@ func marshalPubDSA(key *dsa.PublicKey) []byte {
 	length += intLength(key.Y)
 
 	ret := make([]byte, length)
-	r := marshalInt(ret, key.P)
-	r = marshalInt(r, key.Q)
-	r = marshalInt(r, key.G)
-	r = marshalInt(r, key.Y)
+	r := MarshalInt(ret, key.P)
+	r = MarshalInt(r, key.Q)
+	r = MarshalInt(r, key.G)
+	r = MarshalInt(r, key.Y)
 
 	return ret
 }
@@ -188,8 +188,8 @@ func marshalPubECDSA(key *ecdsa.PublicKey) []byte {
 	length += stringLength(len(keyBytes))
 
 	ret := make([]byte, length)
-	r := marshalString(ret, identifier)
-	r = marshalString(r, keyBytes)
+	r := MarshalString(ret, identifier)
+	r = MarshalString(r, keyBytes)
 	return ret
 }
 

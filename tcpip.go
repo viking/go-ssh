@@ -216,7 +216,7 @@ type channelOpenDirectMsg struct {
 // strings and are expected to be resolveable at the remote end.
 func (c *ClientConn) dial(laddr string, lport int, raddr string, rport int) (*tcpChan, error) {
 	ch := c.newChan(c.transport)
-	if err := c.writePacket(marshal(MsgChannelOpen, channelOpenDirectMsg{
+	if err := c.writePacket(MarshalMsg(MsgChannelOpen, channelOpenDirectMsg{
 		ChanType:      "direct-tcpip",
 		PeersId:       ch.localId,
 		PeersWindow:   1 << 14,

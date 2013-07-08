@@ -14,7 +14,7 @@ import (
 // authenticate authenticates with the remote server. See RFC 4252.
 func (c *ClientConn) authenticate(session []byte) error {
 	// initiate user auth session
-	if err := c.writePacket(marshal(MsgServiceRequest, ServiceRequestMsg{serviceUserAuth})); err != nil {
+	if err := c.writePacket(MarshalMsg(MsgServiceRequest, ServiceRequestMsg{serviceUserAuth})); err != nil {
 		return err
 	}
 	packet, err := c.readPacket()
@@ -91,7 +91,7 @@ type ClientAuth interface {
 type noneAuth int
 
 func (n *noneAuth) auth(session []byte, user string, t *transport, rand io.Reader) (bool, []string, error) {
-	if err := t.writePacket(marshal(MsgUserAuthRequest, UserAuthRequestMsg{
+	if err := t.writePacket(MarshalMsg(MsgUserAuthRequest, UserAuthRequestMsg{
 		User:    user,
 		Service: serviceSSH,
 		Method:  "none",
@@ -125,7 +125,7 @@ func (p *passwordAuth) auth(session []byte, user string, t *transport, rand io.R
 		return false, nil, err
 	}
 
-	if err := t.writePacket(marshal(MsgUserAuthRequest, passwordAuthMsg{
+	if err := t.writePacket(MarshalMsg(MsgUserAuthRequest, passwordAuthMsg{
 		User:     user,
 		Service:  serviceSSH,
 		Method:   "password",
@@ -178,7 +178,7 @@ type publickeyAuthMsg struct {
 	HasSig   bool
 	Algoname string
 	Pubkey   string
-	// Sig is defined as []byte so marshal will exclude it during validateKey
+	// Sig is defined as []byte so MarshalMsg will exclude it during validateKey
 	Sig []byte `ssh:"rest"`
 }
 
@@ -227,7 +227,7 @@ func (p *publickeyAuth) auth(session []byte, user string, t *transport, rand io.
 		// manually wrap the serialized signature in a string
 		s := serializeSignature(algoname, sign)
 		sig := make([]byte, stringLength(len(s)))
-		marshalString(sig, s)
+		MarshalString(sig, s)
 		msg := publickeyAuthMsg{
 			User:     user,
 			Service:  serviceSSH,
@@ -237,7 +237,7 @@ func (p *publickeyAuth) auth(session []byte, user string, t *transport, rand io.
 			Pubkey:   string(pubkey),
 			Sig:      sig,
 		}
-		p := marshal(MsgUserAuthRequest, msg)
+		p := MarshalMsg(MsgUserAuthRequest, msg)
 		if err := t.writePacket(p); err != nil {
 			return false, nil, err
 		}
@@ -264,7 +264,7 @@ func (p *publickeyAuth) validateKey(key interface{}, user string, t *transport) 
 		Algoname: algoname,
 		Pubkey:   string(pubkey),
 	}
-	if err := t.writePacket(marshal(MsgUserAuthRequest, msg)); err != nil {
+	if err := t.writePacket(MarshalMsg(MsgUserAuthRequest, msg)); err != nil {
 		return false, err
 	}
 
@@ -425,7 +425,7 @@ func (c *keyboardInteractiveAuth) auth(session []byte, user string, t *transport
 		Submethods string
 	}
 
-	if err := t.writePacket(marshal(MsgUserAuthRequest, initiateMsg{
+	if err := t.writePacket(MarshalMsg(MsgUserAuthRequest, initiateMsg{
 		User:    user,
 		Service: serviceSSH,
 		Method:  "keyboard-interactive",
@@ -494,9 +494,9 @@ func (c *keyboardInteractiveAuth) auth(session []byte, user string, t *transport
 		p := serialized
 		p[0] = MsgUserAuthInfoResponse
 		p = p[1:]
-		p = marshalUint32(p, uint32(len(answers)))
+		p = MarshalUint32(p, uint32(len(answers)))
 		for _, a := range answers {
-			p = marshalString(p, []byte(a))
+			p = MarshalString(p, []byte(a))
 		}
 
 		if err := t.writePacket(serialized); err != nil {

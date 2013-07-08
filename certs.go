@@ -177,19 +177,19 @@ func marshalOpenSSHCertV01(cert *OpenSSHCertV01) []byte {
 	length += signatureLength(cert.Signature)
 
 	ret := make([]byte, length)
-	r := marshalString(ret, cert.Nonce)
+	r := MarshalString(ret, cert.Nonce)
 	copy(r, pubKey)
 	r = r[len(pubKey):]
-	r = marshalUint64(r, cert.Serial)
-	r = marshalUint32(r, cert.Type)
-	r = marshalString(r, []byte(cert.KeyId))
+	r = MarshalUint64(r, cert.Serial)
+	r = MarshalUint32(r, cert.Type)
+	r = MarshalString(r, []byte(cert.KeyId))
 	r = marshalLengthPrefixedNameList(r, cert.ValidPrincipals)
-	r = marshalUint64(r, uint64(cert.ValidAfter.Unix()))
-	r = marshalUint64(r, uint64(cert.ValidBefore.Unix()))
+	r = MarshalUint64(r, uint64(cert.ValidAfter.Unix()))
+	r = MarshalUint64(r, uint64(cert.ValidBefore.Unix()))
 	r = marshalTupleList(r, cert.CriticalOptions)
 	r = marshalTupleList(r, cert.Extensions)
-	r = marshalString(r, cert.Reserved)
-	r = marshalString(r, sigKey)
+	r = MarshalString(r, cert.Reserved)
+	r = MarshalString(r, sigKey)
 	r = marshalSignature(r, cert.Signature)
 	if len(r) > 0 {
 		panic("internal error")
@@ -208,9 +208,9 @@ func lengthPrefixedNameListLength(namelist []string) int {
 
 func marshalLengthPrefixedNameList(to []byte, namelist []string) []byte {
 	length := uint32(lengthPrefixedNameListLength(namelist) - 4)
-	to = marshalUint32(to, length)
+	to = MarshalUint32(to, length)
 	for _, name := range namelist {
-		to = marshalString(to, []byte(name))
+		to = MarshalString(to, []byte(name))
 	}
 	return to
 }
@@ -245,10 +245,10 @@ func tupleListLength(tupleList []tuple) int {
 
 func marshalTupleList(to []byte, tuplelist []tuple) []byte {
 	length := uint32(tupleListLength(tuplelist) - 4)
-	to = marshalUint32(to, length)
+	to = MarshalUint32(to, length)
 	for _, t := range tuplelist {
-		to = marshalString(to, []byte(t.Name))
-		to = marshalString(to, []byte(t.Data))
+		to = MarshalString(to, []byte(t.Name))
+		to = MarshalString(to, []byte(t.Data))
 	}
 	return to
 }
@@ -285,9 +285,9 @@ func signatureLength(sig *signature) int {
 
 func marshalSignature(to []byte, sig *signature) []byte {
 	length := uint32(signatureLength(sig) - 4)
-	to = marshalUint32(to, length)
-	to = marshalString(to, []byte(sig.Format))
-	to = marshalString(to, sig.Blob)
+	to = MarshalUint32(to, length)
+	to = MarshalString(to, []byte(sig.Format))
+	to = MarshalString(to, sig.Blob)
 	return to
 }
 
