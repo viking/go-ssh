@@ -11,7 +11,7 @@ import (
 	"log"
 	"net/http"
 
-	"code.google.com/p/go.crypto/ssh/terminal"
+	"ssh/terminal"
 )
 
 func ExampleListen() {
