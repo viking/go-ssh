@@ -483,7 +483,7 @@ func TestClientCannotSendHugePacket(t *testing.T) {
 	// test suffices for both.
 	conn := dial(shellHandler, t)
 	defer conn.Close()
-	if err := conn.transport.writePacket(make([]byte, maxPacket*2)); err == nil {
+	if err := conn.transport.WritePacket(make([]byte, maxPacket*2)); err == nil {
 		t.Fatalf("huge packet write should fail")
 	}
 }
@@ -672,7 +672,7 @@ func sendStatus(status uint32, ch *serverChan, t *testing.T) {
 		WantReply: false,
 		Status:    status,
 	}
-	if err := ch.writePacket(MarshalMsg(MsgChannelRequest, msg)); err != nil {
+	if err := ch.WritePacket(MarshalMsg(MsgChannelRequest, msg)); err != nil {
 		t.Errorf("unable to send status: %v", err)
 	}
 }
@@ -687,7 +687,7 @@ func sendSignal(signal string, ch *serverChan, t *testing.T) {
 		Errmsg:     "Process terminated",
 		Lang:       "en-GB-oed",
 	}
-	if err := ch.writePacket(MarshalMsg(MsgChannelRequest, sig)); err != nil {
+	if err := ch.WritePacket(MarshalMsg(MsgChannelRequest, sig)); err != nil {
 		t.Errorf("unable to send signal: %v", err)
 	}
 }
@@ -700,7 +700,7 @@ func sendInvalidRecord(ch *serverChan, t *testing.T) {
 	MarshalUint32(packet[5:], 1)
 	packet[9] = 42
 
-	if err := ch.writePacket(packet); err != nil {
+	if err := ch.WritePacket(packet); err != nil {
 		t.Errorf("unable send invalid record: %v", err)
 	}
 }
@@ -731,7 +731,7 @@ func largeSendHandler(ch *serverChan, t *testing.T) {
 	readLine(shell, t)
 	// try to send more than the 32k window
 	// will allow
-	if err := ch.writePacket(make([]byte, 128*1024)); err == nil {
+	if err := ch.WritePacket(make([]byte, 128*1024)); err == nil {
 		t.Errorf("wrote packet larger than 32k")
 	}
 }
@@ -782,7 +782,7 @@ func channelKeepaliveSender(ch *serverChan, t *testing.T) {
 		Request:   "keepalive@openssh.com",
 		WantReply: true,
 	}
-	if err := ch.writePacket(MarshalMsg(MsgChannelRequest, msg)); err != nil {
+	if err := ch.WritePacket(MarshalMsg(MsgChannelRequest, msg)); err != nil {
 		t.Errorf("unable to send channel keepalive request: %v", err)
 	}
 	sendStatus(0, ch, t)

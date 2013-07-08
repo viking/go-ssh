@@ -214,7 +214,7 @@ func (s *ServerConn) kexDH(group *dhGroup, hashFunc crypto.Hash, magics *handsha
 	}
 	packet = MarshalMsg(MsgKexDHReply, kexDHReply)
 
-	err = s.writePacket(packet)
+	err = s.WritePacket(packet)
 	return
 }
 
@@ -252,7 +252,7 @@ func (s *ServerConn) Handshake() (err error) {
 	serviceAccept := ServiceAcceptMsg{
 		Service: serviceUserAuth,
 	}
-	if err = s.writePacket(MarshalMsg(MsgServiceAccept, serviceAccept)); err != nil {
+	if err = s.WritePacket(MarshalMsg(MsgServiceAccept, serviceAccept)); err != nil {
 		return
 	}
 
@@ -275,7 +275,7 @@ func (s *ServerConn) clientInitHandshake(clientKexInit *KexInitMsg, clientKexIni
 	}
 	serverKexInitPacket := MarshalMsg(MsgKexInit, serverKexInit)
 
-	if err = s.writePacket(serverKexInitPacket); err != nil {
+	if err = s.WritePacket(serverKexInitPacket); err != nil {
 		return
 	}
 
@@ -332,7 +332,7 @@ func (s *ServerConn) clientInitHandshake(clientKexInit *KexInitMsg, clientKexIni
 
 	var packet []byte
 
-	if err = s.writePacket([]byte{MsgNewKeys}); err != nil {
+	if err = s.WritePacket([]byte{MsgNewKeys}); err != nil {
 		return
 	}
 	if err = s.transport.writer.setupKeys(serverKeys, K, H, s.sessionId, hashFunc); err != nil {
@@ -464,7 +464,7 @@ userAuthLoop:
 						Algo:   algo,
 						PubKey: string(pubKey),
 					}
-					if err = s.writePacket(MarshalMsg(MsgUserAuthPubKeyOk, okMsg)); err != nil {
+					if err = s.WritePacket(MarshalMsg(MsgUserAuthPubKeyOk, okMsg)); err != nil {
 						return err
 					}
 					continue userAuthLoop
@@ -524,13 +524,13 @@ userAuthLoop:
 			return errors.New("ssh: no authentication methods configured but NoClientAuth is also false")
 		}
 
-		if err = s.writePacket(MarshalMsg(MsgUserAuthFailure, failureMsg)); err != nil {
+		if err = s.WritePacket(MarshalMsg(MsgUserAuthFailure, failureMsg)); err != nil {
 			return err
 		}
 	}
 
 	packet = []byte{MsgUserAuthSuccess}
-	if err = s.writePacket(packet); err != nil {
+	if err = s.WritePacket(packet); err != nil {
 		return err
 	}
 
@@ -554,7 +554,7 @@ func (c *sshClientKeyboardInteractive) Challenge(user, instruction string, quest
 		prompts = appendBool(prompts, echos[i])
 	}
 
-	if err := c.writePacket(MarshalMsg(MsgUserAuthInfoRequest, UserAuthInfoRequestMsg{
+	if err := c.WritePacket(MarshalMsg(MsgUserAuthInfoRequest, UserAuthInfoRequestMsg{
 		Instruction: instruction,
 		NumPrompts:  uint32(len(questions)),
 		Prompts:     prompts,
@@ -711,7 +711,7 @@ func (s *ServerConn) Accept() (Channel, error) {
 
 			case *GlobalRequestMsg:
 				if msg.WantReply {
-					if err := s.writePacket([]byte{MsgRequestFailure}); err != nil {
+					if err := s.WritePacket([]byte{MsgRequestFailure}); err != nil {
 						return nil, err
 					}
 				}

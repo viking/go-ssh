@@ -33,7 +33,7 @@ const (
 // operations.
 type conn interface {
 	// Encrypt and send a packet of data to the remote peer.
-	writePacket(packet []byte) error
+	WritePacket(packet []byte) error
 
 	// Close closes the connection.
 	Close() error
@@ -143,7 +143,7 @@ func (t *transport) readPacket() ([]byte, error) {
 }
 
 // Encrypt and send a packet of data to the remote peer.
-func (w *writer) writePacket(packet []byte) error {
+func (w *writer) WritePacket(packet []byte) error {
 	if len(packet) > maxPacket {
 		return errors.New("ssh: packet too large")
 	}

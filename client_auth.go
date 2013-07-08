@@ -14,7 +14,7 @@ import (
 // authenticate authenticates with the remote server. See RFC 4252.
 func (c *ClientConn) authenticate(session []byte) error {
 	// initiate user auth session
-	if err := c.writePacket(MarshalMsg(MsgServiceRequest, ServiceRequestMsg{serviceUserAuth})); err != nil {
+	if err := c.WritePacket(MarshalMsg(MsgServiceRequest, ServiceRequestMsg{serviceUserAuth})); err != nil {
 		return err
 	}
 	packet, err := c.readPacket()
@@ -91,7 +91,7 @@ type ClientAuth interface {
 type noneAuth int
 
 func (n *noneAuth) auth(session []byte, user string, t *transport, rand io.Reader) (bool, []string, error) {
-	if err := t.writePacket(MarshalMsg(MsgUserAuthRequest, UserAuthRequestMsg{
+	if err := t.WritePacket(MarshalMsg(MsgUserAuthRequest, UserAuthRequestMsg{
 		User:    user,
 		Service: serviceSSH,
 		Method:  "none",
@@ -125,7 +125,7 @@ func (p *passwordAuth) auth(session []byte, user string, t *transport, rand io.R
 		return false, nil, err
 	}
 
-	if err := t.writePacket(MarshalMsg(MsgUserAuthRequest, passwordAuthMsg{
+	if err := t.WritePacket(MarshalMsg(MsgUserAuthRequest, passwordAuthMsg{
 		User:     user,
 		Service:  serviceSSH,
 		Method:   "password",
@@ -238,7 +238,7 @@ func (p *publickeyAuth) auth(session []byte, user string, t *transport, rand io.
 			Sig:      sig,
 		}
 		p := MarshalMsg(MsgUserAuthRequest, msg)
-		if err := t.writePacket(p); err != nil {
+		if err := t.WritePacket(p); err != nil {
 			return false, nil, err
 		}
 		success, methods, err := handleAuthResponse(t)
@@ -264,7 +264,7 @@ func (p *publickeyAuth) validateKey(key interface{}, user string, t *transport) 
 		Algoname: algoname,
 		Pubkey:   string(pubkey),
 	}
-	if err := t.writePacket(MarshalMsg(MsgUserAuthRequest, msg)); err != nil {
+	if err := t.WritePacket(MarshalMsg(MsgUserAuthRequest, msg)); err != nil {
 		return false, err
 	}
 
@@ -425,7 +425,7 @@ func (c *keyboardInteractiveAuth) auth(session []byte, user string, t *transport
 		Submethods string
 	}
 
-	if err := t.writePacket(MarshalMsg(MsgUserAuthRequest, initiateMsg{
+	if err := t.WritePacket(MarshalMsg(MsgUserAuthRequest, initiateMsg{
 		User:    user,
 		Service: serviceSSH,
 		Method:  "keyboard-interactive",
@@ -499,7 +499,7 @@ func (c *keyboardInteractiveAuth) auth(session []byte, user string, t *transport
 			p = MarshalString(p, []byte(a))
 		}
 
-		if err := t.writePacket(serialized); err != nil {
+		if err := t.WritePacket(serialized); err != nil {
 			return false, nil, err
 		}
 	}

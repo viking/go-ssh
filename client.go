@@ -88,7 +88,7 @@ func (c *ClientConn) handshake() error {
 	kexInitPacket := MarshalMsg(MsgKexInit, clientKexInit)
 	magics.clientKexInit = kexInitPacket
 
-	if err := c.writePacket(kexInitPacket); err != nil {
+	if err := c.WritePacket(kexInitPacket); err != nil {
 		return err
 	}
 	packet, err := c.readPacket()
@@ -134,7 +134,7 @@ func (c *ClientConn) handshake() error {
 		return err
 	}
 
-	if err = c.writePacket([]byte{MsgNewKeys}); err != nil {
+	if err = c.WritePacket([]byte{MsgNewKeys}); err != nil {
 		return err
 	}
 	if err = c.transport.writer.setupKeys(clientKeys, K, H, H, hashFunc); err != nil {
@@ -163,7 +163,7 @@ func (c *ClientConn) kexDH(group *dhGroup, hashFunc crypto.Hash, magics *handsha
 	kexDHInit := KexDHInitMsg{
 		X: X,
 	}
-	if err := c.writePacket(MarshalMsg(MsgKexDHInit, kexDHInit)); err != nil {
+	if err := c.WritePacket(MarshalMsg(MsgKexDHInit, kexDHInit)); err != nil {
 		return nil, nil, err
 	}
 
@@ -335,7 +335,7 @@ func (c *ClientConn) mainLoop() {
 				// This handles keepalive messages and matches
 				// the behaviour of OpenSSH.
 				if msg.WantReply {
-					c.writePacket(MarshalMsg(MsgRequestFailure, GlobalRequestFailureMsg{}))
+					c.WritePacket(MarshalMsg(MsgRequestFailure, GlobalRequestFailureMsg{}))
 				}
 			case *GlobalRequestSuccessMsg, *GlobalRequestFailureMsg:
 				c.globalRequest.response <- msg
@@ -392,7 +392,7 @@ func (c *ClientConn) handleChanOpen(msg *ChannelOpenMsg) {
 			MaxPacketSize: 1 << 15,
 		}
 
-		c.writePacket(MarshalMsg(MsgChannelOpenConfirm, m))
+		c.WritePacket(MarshalMsg(MsgChannelOpenConfirm, m))
 		l <- forward{ch, raddr}
 	default:
 		// unknown channel type
@@ -402,7 +402,7 @@ func (c *ClientConn) handleChanOpen(msg *ChannelOpenMsg) {
 			Message:  fmt.Sprintf("unknown channel type: %v", msg.ChanType),
 			Language: "en_US.UTF-8",
 		}
-		c.writePacket(MarshalMsg(MsgChannelOpenFailure, m))
+		c.WritePacket(MarshalMsg(MsgChannelOpenFailure, m))
 	}
 }
 
@@ -412,7 +412,7 @@ func (c *ClientConn) handleChanOpen(msg *ChannelOpenMsg) {
 func (c *ClientConn) sendGlobalRequest(m interface{}) (*GlobalRequestSuccessMsg, error) {
 	c.globalRequest.Lock()
 	defer c.globalRequest.Unlock()
-	if err := c.writePacket(MarshalMsg(MsgGlobalRequest, m)); err != nil {
+	if err := c.WritePacket(MarshalMsg(MsgGlobalRequest, m)); err != nil {
 		return nil, err
 	}
 	r := <-c.globalRequest.response
@@ -431,7 +431,7 @@ func (c *ClientConn) sendConnectionFailed(remoteId uint32) error {
 		Message:  "invalid request",
 		Language: "en_US.UTF-8",
 	}
-	return c.writePacket(MarshalMsg(MsgChannelOpenFailure, m))
+	return c.WritePacket(MarshalMsg(MsgChannelOpenFailure, m))
 }
 
 // parseTCPAddr parses the originating address from the remote into a *net.TCPAddr.

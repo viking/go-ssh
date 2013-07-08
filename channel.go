@@ -90,19 +90,19 @@ func (c *channel) sendWindowAdj(n int) error {
 		PeersId:         c.remoteId,
 		AdditionalBytes: uint32(n),
 	}
-	return c.writePacket(MarshalMsg(MsgChannelWindowAdjust, msg))
+	return c.WritePacket(MarshalMsg(MsgChannelWindowAdjust, msg))
 }
 
 // sendEOF sends EOF to the remote side. RFC 4254 Section 5.3
 func (c *channel) sendEOF() error {
-	return c.writePacket(MarshalMsg(MsgChannelEOF, ChannelEOFMsg{
+	return c.WritePacket(MarshalMsg(MsgChannelEOF, ChannelEOFMsg{
 		PeersId: c.remoteId,
 	}))
 }
 
 // sendClose informs the remote side of our intent to close the channel.
 func (c *channel) sendClose() error {
-	return c.conn.writePacket(MarshalMsg(MsgChannelClose, ChannelCloseMsg{
+	return c.conn.WritePacket(MarshalMsg(MsgChannelClose, ChannelCloseMsg{
 		PeersId: c.remoteId,
 	}))
 }
@@ -114,17 +114,17 @@ func (c *channel) sendChannelOpenFailure(reason RejectionReason, message string)
 		Message:  message,
 		Language: "en",
 	}
-	return c.writePacket(MarshalMsg(MsgChannelOpenFailure, reject))
+	return c.WritePacket(MarshalMsg(MsgChannelOpenFailure, reject))
 }
 
-func (c *channel) writePacket(b []byte) error {
+func (c *channel) WritePacket(b []byte) error {
 	if c.closed() {
 		return io.EOF
 	}
 	if uint32(len(b)) > c.maxPacket {
 		return fmt.Errorf("ssh: cannot write %d bytes, maxPacket is %d bytes", len(b), c.maxPacket)
 	}
-	return c.conn.writePacket(b)
+	return c.conn.WritePacket(b)
 }
 
 func (c *channel) closed() bool {
@@ -170,7 +170,7 @@ func (c *serverChan) Accept() error {
 		MyWindow:      c.myWindow,
 		MaxPacketSize: c.maxPacket,
 	}
-	return c.writePacket(MarshalMsg(MsgChannelOpenConfirm, confirm))
+	return c.WritePacket(MarshalMsg(MsgChannelOpenConfirm, confirm))
 }
 
 func (c *serverChan) Reject(reason RejectionReason, message string) error {
@@ -269,7 +269,7 @@ func (edc extendedDataChannel) Write(data []byte) (n int, err error) {
 		MarshalUint32(packet[9:], uint32(len(todo)))
 		copy(packet[13:], todo)
 
-		if err = c.writePacket(packet); err != nil {
+		if err = c.WritePacket(packet); err != nil {
 			return
 		}
 
@@ -288,7 +288,7 @@ func (c *serverChan) Read(data []byte) (n int, err error) {
 			PeersId:         c.remoteId,
 			AdditionalBytes: windowAdjustment,
 		})
-		err = c.writePacket(packet)
+		err = c.WritePacket(packet)
 	}
 
 	return
@@ -379,7 +379,7 @@ func (c *serverChan) Write(data []byte) (n int, err error) {
 		MarshalUint32(packet[5:], uint32(len(todo)))
 		copy(packet[9:], todo)
 
-		if err = c.writePacket(packet); err != nil {
+		if err = c.WritePacket(packet); err != nil {
 			return
 		}
 
@@ -417,13 +417,13 @@ func (c *serverChan) AckRequest(ok bool) error {
 		ack := ChannelRequestFailureMsg{
 			PeersId: c.remoteId,
 		}
-		return c.writePacket(MarshalMsg(MsgChannelFailure, ack))
+		return c.WritePacket(MarshalMsg(MsgChannelFailure, ack))
 	}
 
 	ack := ChannelRequestSuccessMsg{
 		PeersId: c.remoteId,
 	}
-	return c.writePacket(MarshalMsg(MsgChannelSuccess, ack))
+	return c.WritePacket(MarshalMsg(MsgChannelSuccess, ack))
 }
 
 func (c *serverChan) ChannelType() string {
@@ -526,7 +526,7 @@ func (w *chanWriter) Write(data []byte) (written int, err error) {
 			byte(remoteId >> 24), byte(remoteId >> 16), byte(remoteId >> 8), byte(remoteId),
 			byte(n >> 24), byte(n >> 16), byte(n >> 8), byte(n),
 		}
-		if err = w.writePacket(append(packet, data[:n]...)); err != nil {
+		if err = w.WritePacket(append(packet, data[:n]...)); err != nil {
 			break
 		}
 		data = data[n:]
