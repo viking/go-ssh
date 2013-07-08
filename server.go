@@ -649,7 +649,7 @@ func (s *ServerConn) Accept() (Channel, error) {
 				}
 				c := &serverChan{
 					channel: channel{
-						conn:      s,
+						Conn:      s,
 						remoteId:  msg.PeersId,
 						remoteWin: window{Cond: newCond()},
 						maxPacket: msg.MaxPacketSize,

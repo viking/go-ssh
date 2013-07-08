@@ -31,7 +31,7 @@ const (
 
 // conn represents an ssh transport that implements packet based
 // operations.
-type conn interface {
+type Conn interface {
 	// Encrypt and send a packet of data to the remote peer.
 	WritePacket(packet []byte) error
 

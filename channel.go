@@ -78,7 +78,7 @@ const (
 )
 
 type channel struct {
-	conn              // the underlying transport
+	Conn              // the underlying transport
 	localId, remoteId uint32
 	remoteWin         window
 	maxPacket         uint32
@@ -102,7 +102,7 @@ func (c *channel) sendEOF() error {
 
 // sendClose informs the remote side of our intent to close the channel.
 func (c *channel) sendClose() error {
-	return c.conn.WritePacket(MarshalMsg(MsgChannelClose, ChannelCloseMsg{
+	return c.Conn.WritePacket(MarshalMsg(MsgChannelClose, ChannelCloseMsg{
 		PeersId: c.remoteId,
 	}))
 }
@@ -124,7 +124,7 @@ func (c *channel) WritePacket(b []byte) error {
 	if uint32(len(b)) > c.maxPacket {
 		return fmt.Errorf("ssh: cannot write %d bytes, maxPacket is %d bytes", len(b), c.maxPacket)
 	}
-	return c.conn.WritePacket(b)
+	return c.Conn.WritePacket(b)
 }
 
 func (c *channel) closed() bool {
@@ -447,10 +447,10 @@ type ClientChan struct {
 // NewClientChan returns a partially constructed *ClientChan
 // using the local id provided. To be usable ClientChan.remoteId
 // needs to be assigned once known.
-func NewClientChan(cc conn, id uint32) *ClientChan {
+func NewClientChan(cc Conn, id uint32) *ClientChan {
 	c := &ClientChan{
 		channel: channel{
-			conn:      cc,
+			Conn:      cc,
 			localId:   id,
 			remoteWin: window{Cond: newCond()},
 		},
