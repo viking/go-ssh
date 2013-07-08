@@ -648,7 +648,7 @@ func (s *ServerConn) Accept() (Channel, error) {
 					return nil, errors.New("ssh: invalid MaxPacketSize from peer")
 				}
 				c := &serverChan{
-					channel: channel{
+					GenericChannel: GenericChannel{
 						Conn:      s,
 						remoteId:  msg.PeersId,
 						remoteWin: window{Cond: newCond()},

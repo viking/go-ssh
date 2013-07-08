@@ -470,7 +470,7 @@ func TestClientCannotSendAfterClose(t *testing.T) {
 		t.Fatalf("Unable to execute command: %v", err)
 	}
 	// close underlying channel
-	if err := session.channel.Close(); err != nil {
+	if err := session.GenericChannel.Close(); err != nil {
 		t.Fatalf("Unable to close session: %v", err)
 	}
 	if _, err := in.Write([]byte("foo")); err == nil {

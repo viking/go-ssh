@@ -77,7 +77,7 @@ const (
 	ResourceShortage
 )
 
-type channel struct {
+type GenericChannel struct {
 	Conn              // the underlying transport
 	localId, remoteId uint32
 	remoteWin         window
@@ -85,7 +85,7 @@ type channel struct {
 	isClosed          uint32 // atomic bool, non zero if true
 }
 
-func (c *channel) sendWindowAdj(n int) error {
+func (c *GenericChannel) sendWindowAdj(n int) error {
 	msg := WindowAdjustMsg{
 		PeersId:         c.remoteId,
 		AdditionalBytes: uint32(n),
@@ -94,20 +94,20 @@ func (c *channel) sendWindowAdj(n int) error {
 }
 
 // sendEOF sends EOF to the remote side. RFC 4254 Section 5.3
-func (c *channel) sendEOF() error {
+func (c *GenericChannel) sendEOF() error {
 	return c.WritePacket(MarshalMsg(MsgChannelEOF, ChannelEOFMsg{
 		PeersId: c.remoteId,
 	}))
 }
 
 // sendClose informs the remote side of our intent to close the channel.
-func (c *channel) sendClose() error {
+func (c *GenericChannel) sendClose() error {
 	return c.Conn.WritePacket(MarshalMsg(MsgChannelClose, ChannelCloseMsg{
 		PeersId: c.remoteId,
 	}))
 }
 
-func (c *channel) sendChannelOpenFailure(reason RejectionReason, message string) error {
+func (c *GenericChannel) sendChannelOpenFailure(reason RejectionReason, message string) error {
 	reject := ChannelOpenFailureMsg{
 		PeersId:  c.remoteId,
 		Reason:   reason,
@@ -117,7 +117,7 @@ func (c *channel) sendChannelOpenFailure(reason RejectionReason, message string)
 	return c.WritePacket(MarshalMsg(MsgChannelOpenFailure, reject))
 }
 
-func (c *channel) WritePacket(b []byte) error {
+func (c *GenericChannel) WritePacket(b []byte) error {
 	if c.closed() {
 		return io.EOF
 	}
@@ -127,16 +127,16 @@ func (c *channel) WritePacket(b []byte) error {
 	return c.Conn.WritePacket(b)
 }
 
-func (c *channel) closed() bool {
+func (c *GenericChannel) closed() bool {
 	return atomic.LoadUint32(&c.isClosed) > 0
 }
 
-func (c *channel) setClosed() bool {
+func (c *GenericChannel) setClosed() bool {
 	return atomic.CompareAndSwapUint32(&c.isClosed, 0, 1)
 }
 
 type serverChan struct {
-	channel
+	GenericChannel
 	// immutable once created
 	chanType  string
 	extraData []byte
@@ -437,7 +437,7 @@ func (c *serverChan) ExtraData() []byte {
 // A ClientChan represents a single RFC 4254 channel multiplexed
 // over a SSH connection.
 type ClientChan struct {
-	channel
+	GenericChannel
 	stdin  *chanWriter
 	stdout *chanReader
 	stderr *chanReader
@@ -449,7 +449,7 @@ type ClientChan struct {
 // needs to be assigned once known.
 func NewClientChan(cc Conn, id uint32) *ClientChan {
 	c := &ClientChan{
-		channel: channel{
+		GenericChannel: GenericChannel{
 			Conn:      cc,
 			localId:   id,
 			remoteWin: window{Cond: newCond()},
@@ -457,15 +457,15 @@ func NewClientChan(cc Conn, id uint32) *ClientChan {
 		msg: make(chan interface{}, 16),
 	}
 	c.stdin = &chanWriter{
-		channel: &c.channel,
+		GenericChannel: &c.GenericChannel,
 	}
 	c.stdout = &chanReader{
-		channel: &c.channel,
-		buffer:  newBuffer(),
+		GenericChannel: &c.GenericChannel,
+		buffer:         newBuffer(),
 	}
 	c.stderr = &chanReader{
-		channel: &c.channel,
-		buffer:  newBuffer(),
+		GenericChannel: &c.GenericChannel,
+		buffer:         newBuffer(),
 	}
 	return c
 }
@@ -501,7 +501,7 @@ func (c *ClientChan) Close() error {
 
 // A chanWriter represents the stdin of a remote process.
 type chanWriter struct {
-	*channel
+	*GenericChannel
 	// indicates the writer has been closed. eof is owned by the
 	// caller of Write/Close.
 	eof bool
@@ -549,7 +549,7 @@ func (w *chanWriter) Close() error {
 
 // A chanReader represents stdout or stderr of a remote process.
 type chanReader struct {
-	*channel // the channel backing this reader
+	*GenericChannel // the channel backing this reader
 	*buffer
 }
 
